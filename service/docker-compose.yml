@@ -1,0 +1,17 @@
+version: '3.1'
+
+services:
+  postgres-eipsfun:
+    image: postgres:15
+    restart: always
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=eipsfun
+      - POSTGRES_DB=eipsfun
+    ports:
+      - 5335:5432
+    volumes:
+      - eipsfun-postgresql:/var/lib/postgresql/data
+
+volumes:
+  eipsfun-postgresql:
