@@ -53,7 +53,6 @@ export class AppController {
   @ApiOperation({ description: 'Search EIPs.' })
   async search(@Query() filters: EIPsSearchFilters) {
     this.logger.log(filters);
-    return this.appService.getHello();
   }
 
   @Get('/eips/list')

@@ -12,14 +12,6 @@ const mailchimpTx = require('@mailchimp/mailchimp_transactional')(
 export class AppService {
   constructor(private prisma: PrismaService) {}
 
-  getHello(): string {
-    return 'Hello World!';
-  }
-
-  // async findSearch() {
-  //
-  // }
-
   async findAll(
     type?: EIPType,
     category?: EIPCategory,
@@ -66,8 +58,5 @@ export class AppService {
     return response;
   }
 
-  async handleSendEIPsUpdateEmail() {
-    const response = await mailchimpTx.users.ping();
-    console.log(response);
-  }
+  async handleSendEIPsUpdateEmail() {}
 }
