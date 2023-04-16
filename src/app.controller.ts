@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Query, Logger, Body } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ApiOperation, ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString } from 'class-validator';
@@ -82,5 +82,28 @@ export class AppController {
         per_page: perPage,
       },
     };
+  }
+
+  @Post('/email/subscribe')
+  async emailSubscribe(@Body() body: { email: string }) {
+    return {};
+  }
+
+  @Post('/email/ping')
+  async pingEmail() {
+    const result = await this.appService.pingEmailService();
+    return result;
+  }
+
+  @Post('/email/send')
+  async sendEmail() {
+    const result = await this.appService.pingEmailService();
+    return result;
+  }
+
+  @Post('/github/payload')
+  async githubHook(@Body() payload) {
+    console.log('payload', payload);
+    return { data: 'hello' };
   }
 }

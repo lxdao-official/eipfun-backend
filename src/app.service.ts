@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { EIPs, EIPType, EIPCategory, Prisma } from '@prisma/client';
+// import * from '@mailchimp/mailchimp_transactional';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const mailchimpTx = require('@mailchimp/mailchimp_transactional')(
+  process.env.MAILCHIMP_API_KEY,
+);
 
 @Injectable()
 export class AppService {
@@ -9,6 +15,10 @@ export class AppService {
   getHello(): string {
     return 'Hello World!';
   }
+
+  // async findSearch() {
+  //
+  // }
 
   async findAll(
     type?: EIPType,
@@ -22,6 +32,14 @@ export class AppService {
     };
     const find = {
       where,
+      select: {
+        id: true,
+        eip: true,
+        title: true,
+        author: true,
+        status: true,
+        type: true,
+      },
       skip: skip,
       take: take,
     };
@@ -36,5 +54,20 @@ export class AppService {
       total,
       list,
     };
+  }
+
+  async pingEmailService() {
+    const response = await mailchimpTx.users.ping();
+    return response;
+  }
+
+  async sendEmail() {
+    const response = await mailchimpTx.users.ping();
+    return response;
+  }
+
+  async handleSendEIPsUpdateEmail() {
+    const response = await mailchimpTx.users.ping();
+    console.log(response);
   }
 }

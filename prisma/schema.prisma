@@ -41,27 +41,22 @@ model EmailSubscribe {
 }
 
 model EIPs {
-    id                  Int                @id @default(autoincrement())
-    eip                 Int                @unique
-    title               String
-    description         String
-    author              String
-    discussions_to      String
-    status              EIPStatus
-    type                EIPType
-    category            EIPCategory?
-    created             DateTime
-    requires            Int[]
-    last_call_deadline  DateTime?
-    withdrawal_reason   String?
-    content             String
-    createdAt           DateTime           @default(now())
-}
-
-model EIPsSearch {
-    id                  Int                @id @default(autoincrement())
-    eip                 Int                @unique
-    subTitle            String
-    shortRead           String
-    createdAt           DateTime           @default(now())
+    id                      Int                @id @default(autoincrement())
+    eip                     Int                @unique
+    title                   String
+    description             String
+    author                  String
+    discussions_to          String
+    status                  EIPStatus
+    type                    EIPType
+    category                EIPCategory?
+    created                 DateTime
+    requires                Int[]
+    last_call_deadline      DateTime?
+    withdrawal_reason       String?
+    content                 String
+    extension_sub_title     String
+    extension_short_read    String
+    createdAt               DateTime            @default(now())
+    updatedAt               DateTime?
 }

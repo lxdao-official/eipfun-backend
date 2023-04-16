@@ -32,20 +32,12 @@ CREATE TABLE "EIPs" (
     "last_call_deadline" TIMESTAMP(3),
     "withdrawal_reason" TEXT,
     "content" TEXT NOT NULL,
+    "extension_sub_title" TEXT NOT NULL,
+    "extension_short_read" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3),
 
     CONSTRAINT "EIPs_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "EIPsSearch" (
-    "id" SERIAL NOT NULL,
-    "eip" INTEGER NOT NULL,
-    "subTitle" TEXT NOT NULL,
-    "shortRead" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "EIPsSearch_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -53,6 +45,3 @@ CREATE UNIQUE INDEX "EmailSubscribe_address_key" ON "EmailSubscribe"("address");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "EIPs_eip_key" ON "EIPs"("eip");
-
--- CreateIndex
-CREATE UNIQUE INDEX "EIPsSearch_eip_key" ON "EIPsSearch"("eip");
