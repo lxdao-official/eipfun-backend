@@ -1,10 +1,11 @@
 import { Controller, Get, Post, Query, Logger, Body } from '@nestjs/common';
 import { AppService } from './app.service';
-import { ApiOperation, ApiProperty } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EIPs, EIPType, EIPCategory, Prisma } from '@prisma/client';
 import { EIPBaseDto } from './dto/EIPBase.dto';
+import { BusinessException } from './common/business.exception';
 
 export class ResponseData<T> {
   message?: string;
@@ -84,25 +85,41 @@ export class AppController {
   }
 
   @Post('/email/subscribe')
-  async emailSubscribe(@Body() body: { email: string }) {
-    return {};
+  @ApiOperation({ description: 'Subscribe email.' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      example: { address: 'xxxx@yyy.zz' },
+    },
+  })
+  async subscribeEMail(@Body() body: any) {
+    const { address } = body;
+    if (!this.appService.isEmail(address)) {
+      throw new BusinessException({
+        message: 'This email address is invalid.',
+        error_code: 'ERROR_INVALID',
+      });
+    }
+    // const status = await this.appService.findSubscribedEMail(address);
+    // if (status === 'subscribed') {
+    //   throw new BusinessException({
+    //     message: 'This email address is already subscribed.',
+    //     error_code: 'ERROR_REPEAT',
+    //   });
+    // }
+    const result = await this.appService.subscribeEMail(address);
+    return { data: result };
   }
 
   @Post('/email/ping')
-  async pingEmail() {
-    const result = await this.appService.pingEmailService();
+  async pingEMail() {
+    const result = await this.appService.pingEMailService();
     return result;
   }
 
-  @Post('/email/send')
-  async sendEmail() {
-    const result = await this.appService.pingEmailService();
-    return result;
-  }
-
-  @Post('/github/payload')
-  async githubHook(@Body() payload) {
-    console.log('payload', payload);
-    return { data: 'hello' };
-  }
+  // @Post('/email/send')
+  // async sendEEmail() {
+  //   const result = await this.appService.pingEMailService();
+  //   return result;
+  // }
 }
