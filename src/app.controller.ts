@@ -58,14 +58,10 @@ export class AppController {
   @Get('/eips/all')
   @ApiOperation({ description: 'EIPs list.' })
   async all() {
-
-
-
-    const {list } = await this.appService.showAll();
+    const { list } = await this.appService.showAll();
 
     return {
       data: list,
-     
     };
   }
   @Get('/eips/list')
@@ -97,12 +93,11 @@ export class AppController {
   }
   @Get('/eips/update')
   @ApiOperation({ description: 'Updata Eips.' })
- 
   async updateAllEips() {
     const result = await this.appService.updateEips();
     return { data: result };
   }
-  
+
   @Post('/email/subscribe')
   @ApiOperation({ description: 'Subscribe email.' })
   @ApiBody({

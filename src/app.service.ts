@@ -1,11 +1,12 @@
 import { ConsoleLogger, Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
-import { EIPs, EIPType, EIPCategory, Prisma } from '@prisma/client';
+import { EIPs, EIPStatus, EIPType, EIPCategory, Prisma } from '@prisma/client';
 import * as mailchimp from '@mailchimp/mailchimp_marketing';
 import * as md5 from 'md5';
-const fs = require('fs');
-const download = require('download-git-repo');
-const path = require('path');
+import * as fs from 'fs';
+import * as download from 'download-git-repo';
+import * as path from 'path';
+
 @Injectable()
 export class AppService {
   constructor(private prisma: PrismaService) {
@@ -117,10 +118,10 @@ export class AppService {
     return add_update_response;
   }
   async updateEips() {
-    let that = this;
+    const that = this;
     const paths = './ETH-EIPs/';
     console.log('开始清理文件夹');
-    // deleteFolder(paths);
+    deleteFolder(paths);
     console.log('清理文件夹成功');
     download(
       'direct:https://github.com/ethereum/EIPs.git',
@@ -129,7 +130,7 @@ export class AppService {
       (err) => {
         console.log(err ? '拉取Error' : '拉取Success');
         if (!err) {
-          let writeData = [];
+          const writeData = [];
           const directory = './ETH-EIPs/EIPS/';
           fs.readdir(directory, (err, files) => {
             if (err) {
@@ -140,6 +141,7 @@ export class AppService {
               if (i === files.length) {
                 console.log('解析EIPS文件完成');
                 that.saveData(writeData);
+                console.log('写入DB完成');
               } else {
                 fs.readFile(
                   path.join(directory, files[i]),
@@ -149,49 +151,66 @@ export class AppService {
                       console.log('读取文件失败', err);
                       return;
                     }
-                    let metaInfo = data.split('---')[1];
-                    let lines = metaInfo.split('\n');
+                    const metaInfo = data.split('---')[1];
+                    const lines = metaInfo.split('\n');
                     //默认值填充
-                    let result = <EIPs>{
-                      id: null,
+                    const result = <EIPs>{
                       eip: null,
                       title: '',
                       description: '',
-                      status: 'Living',
-                      'discussions_to': null,
+                      status: null,
+                      discussions_to: null,
                       author: '',
                       content: '',
                       extension_sub_title: null,
                       extension_short_read: null,
                       createdAt: new Date(),
-                      updatedAt:  new Date(),
-                      type: 'Standards_Track',
-                      category: 'Core',
-                      requires:[],
-                      created: undefined,
-                      last_call_deadline: undefined,
+                      updatedAt: new Date(),
+                      type: null,
+                      category: null,
+                      requires: [],
+                      created: null,
+                      last_call_deadline: null,
                       withdrawal_reason: null,
                     };
                     for (let q = 0; q < lines.length; q++) {
-                      let parts = lines[q].split(': ');
-                      if (parts[0]) {
-                        if (parts[0] === 'eip') {
-                          result[parts[0]] = parts[1] * 1;
-                          result['id'] = parts[1] * 1;
-                        } else if (parts[0] === 'requires') {
-                          result[parts[0]] = parts[1].split(', ');
-                        } else if (parts[0] === 'type') {
-                          result[parts[0]] = parts[1];
-                          if (parts[1] === 'Standards Track') {
-                            result[parts[0]] = 'Standards_Track';
+                      const parts = lines[q].split(': ');
+                      const field: string = parts[0];
+                      const value: string = parts[1];
+                      if (field) {
+                        if (field === 'eip') {
+                          // @ts-ignore
+                          result[field] = value * 1;
+                        } else if (field === 'requires') {
+                          // @ts-ignore
+                          result[field] = value.split(', ').map((eip) => {
+                            return Number(eip);
+                          });
+                        } else if (field === 'type') {
+                          // @ts-ignore
+                          result[field] = value;
+                          if (value === 'Standards Track') {
+                            result[field] = EIPType.Standards_Track;
                           }
-                        } else if (
-                          parts[0] === 'created' ||
-                          parts[0] === 'last_call_deadline'
-                        ) {
-                          result[parts[0]] = new Date(parts[1]);
+                        } else if (field === 'status') {
+                          // @ts-ignore
+                          result[field] = value;
+                          if (value === 'Last Call') {
+                            result[field] = EIPStatus.Last_Call;
+                          }
+                        } else if (field === 'created') {
+                          result[field] = new Date(value);
+                        } else if (field === 'last-call-deadline') {
+                          result['last_call_deadline'] = new Date(value);
+                        } else if (field === 'discussions-to') {
+                          result['discussions_to'] = value;
+                        } else if (field === 'withdrawal-reason') {
+                          result['withdrawal_reason'] = value;
                         } else {
-                          result[parts[0]] = parts[1];
+                          if (field === 'updated') {
+                          } else {
+                            result[field] = value;
+                          }
                         }
                       }
                     }
@@ -216,15 +235,17 @@ export class AppService {
   }
 
   async saveData(writeData: EIPs[]) {
-    console.log(writeData.length);
+    // console.log(writeData.length);
     await this.prisma.eIPs.deleteMany({});
-
+    // for (const item of writeData) {
+    //   console.log('item:', item);
+    //   await this.prisma.eIPs.create({ data: item });
+    // }
     await this.prisma.eIPs.createMany({
       data: writeData,
     });
   }
 }
-
 
 function deleteFolder(filePath) {
   const files = [];
