@@ -126,7 +126,7 @@ export class AppService {
       'direct:https://github.com/ethereum/EIPs.git',
       'ETH-EIPs',
       { clone: true },
-       (err)=> {
+      (err) => {
         console.log(err ? '拉取Error' : '拉取Success');
         if (!err) {
           let writeData = [];
@@ -137,7 +137,6 @@ export class AppService {
               return;
             }
             (function getFileMeta(i) {
-              console.log(i, files.length);
               if (i === files.length) {
                 console.log('解析EIPS文件完成');
                 that.saveData(writeData);
@@ -152,21 +151,27 @@ export class AppService {
                     }
                     let metaInfo = data.split('---')[1];
                     let lines = metaInfo.split('\n');
-                    // console.log(lines)
-                    let result = <EIPs>(<unknown>{
+                    //默认值填充
+                    let result = <EIPs>{
                       id: null,
                       eip: null,
                       title: '',
                       description: '',
-                      status: '',
-                      discussions_to: '',
+                      status: 'Living',
+                      'discussions_to': null,
                       author: '',
                       content: '',
-                      extension_sub_title: '',
-                      extension_short_read: '',
-                      createdAt: undefined,
-                      updatedAt: undefined,
-                    });
+                      extension_sub_title: null,
+                      extension_short_read: null,
+                      createdAt: new Date(),
+                      updatedAt:  new Date(),
+                      type: 'Standards_Track',
+                      category: 'Core',
+                      requires:[],
+                      created: undefined,
+                      last_call_deadline: undefined,
+                      withdrawal_reason: null,
+                    };
                     for (let q = 0; q < lines.length; q++) {
                       let parts = lines[q].split(': ');
                       if (parts[0]) {
@@ -190,10 +195,7 @@ export class AppService {
                         }
                       }
                     }
-                    // console.log(result);
-                    // Prismas.eIPs.create({data:result})
                     writeData.push(result);
-                    // that.addEips(result)
                     getFileMeta(i + 1);
                   },
                 );
@@ -201,7 +203,7 @@ export class AppService {
             })(0);
           });
         } else {
-          console.log(err)
+          console.log(err);
           deleteFolder(paths);
         }
       },
@@ -212,11 +214,7 @@ export class AppService {
     const response = await mailchimp.ping.get();
     return response;
   }
-  async addEips(data: EIPs) {
-    await this.prisma.eIPs.create({
-      data,
-    });
-  }
+
   async saveData(writeData: EIPs[]) {
     console.log(writeData.length);
     await this.prisma.eIPs.deleteMany({});
@@ -227,21 +225,6 @@ export class AppService {
   }
 }
 
-// const  saveData = (writeData) => {
-//   const paths = 'ETH-EIPs';
-//   let writeDatas = JSON.stringify(writeData);
-//   console.log('开始保存EIPS文件');
-//   fs.writeFileSync('user.json', writeDatas, (err) => {
-//     if (err) {
-//       throw err;
-//     }
-//     console.log('JSON data is saved.');
-//     deleteFolder(paths);
-//     return writeData.length;
-//   });
-
-// };
-const cloneGit = async function () {};
 
 function deleteFolder(filePath) {
   const files = [];
