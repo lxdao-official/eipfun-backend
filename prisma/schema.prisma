@@ -44,19 +44,19 @@ model EIPs {
     id                      Int                @id @default(autoincrement())
     eip                     Int                @unique
     title                   String
-    description             String
+    description             String?
     author                  String
-    discussions_to          String
+    discussions_to          String?
     status                  EIPStatus
     type                    EIPType
     category                EIPCategory?
     created                 DateTime
-    requires                Int[]
+    requires                Int[]               @default([])
     last_call_deadline      DateTime?
     withdrawal_reason       String?
-    content                 String
-    extension_sub_title     String
-    extension_short_read    String
+    content                 String?
+    extension_sub_title     String?
+    extension_short_read    String?
     createdAt               DateTime            @default(now())
     updatedAt               DateTime?
 }

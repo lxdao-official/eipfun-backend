@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { ConsoleLogger, Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { EIPs, EIPType, EIPCategory, Prisma } from '@prisma/client';
 import * as mailchimp from '@mailchimp/mailchimp_marketing';
 import * as md5 from 'md5';
-
+const fs = require('fs');
+const download = require('download-git-repo');
+const path = require('path');
 @Injectable()
 export class AppService {
   constructor(private prisma: PrismaService) {
@@ -48,7 +50,13 @@ export class AppService {
       list,
     };
   }
+  async showAll() {
+    const list = await this.prisma.eIPs.findMany();
 
+    return {
+      list,
+    };
+  }
   isEmail(email): boolean {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (emailPattern.test(email)) {
@@ -108,9 +116,148 @@ export class AppService {
 
     return add_update_response;
   }
+  async updateEips() {
+    let that = this;
+    const paths = './ETH-EIPs/';
+    console.log('开始清理文件夹');
+    // deleteFolder(paths);
+    console.log('清理文件夹成功');
+    download(
+      'direct:https://github.com/ethereum/EIPs.git',
+      'ETH-EIPs',
+      { clone: true },
+       (err)=> {
+        console.log(err ? '拉取Error' : '拉取Success');
+        if (!err) {
+          let writeData = [];
+          const directory = './ETH-EIPs/EIPS/';
+          fs.readdir(directory, (err, files) => {
+            if (err) {
+              console.error(err);
+              return;
+            }
+            (function getFileMeta(i) {
+              console.log(i, files.length);
+              if (i === files.length) {
+                console.log('解析EIPS文件完成');
+                that.saveData(writeData);
+              } else {
+                fs.readFile(
+                  path.join(directory, files[i]),
+                  'utf8',
+                  (err, data) => {
+                    if (err) {
+                      console.log('读取文件失败', err);
+                      return;
+                    }
+                    let metaInfo = data.split('---')[1];
+                    let lines = metaInfo.split('\n');
+                    // console.log(lines)
+                    let result = <EIPs>(<unknown>{
+                      id: null,
+                      eip: null,
+                      title: '',
+                      description: '',
+                      status: '',
+                      discussions_to: '',
+                      author: '',
+                      content: '',
+                      extension_sub_title: '',
+                      extension_short_read: '',
+                      createdAt: undefined,
+                      updatedAt: undefined,
+                    });
+                    for (let q = 0; q < lines.length; q++) {
+                      let parts = lines[q].split(': ');
+                      if (parts[0]) {
+                        if (parts[0] === 'eip') {
+                          result[parts[0]] = parts[1] * 1;
+                          result['id'] = parts[1] * 1;
+                        } else if (parts[0] === 'requires') {
+                          result[parts[0]] = parts[1].split(', ');
+                        } else if (parts[0] === 'type') {
+                          result[parts[0]] = parts[1];
+                          if (parts[1] === 'Standards Track') {
+                            result[parts[0]] = 'Standards_Track';
+                          }
+                        } else if (
+                          parts[0] === 'created' ||
+                          parts[0] === 'last_call_deadline'
+                        ) {
+                          result[parts[0]] = new Date(parts[1]);
+                        } else {
+                          result[parts[0]] = parts[1];
+                        }
+                      }
+                    }
+                    // console.log(result);
+                    // Prismas.eIPs.create({data:result})
+                    writeData.push(result);
+                    // that.addEips(result)
+                    getFileMeta(i + 1);
+                  },
+                );
+              }
+            })(0);
+          });
+        } else {
+          console.log(err)
+          deleteFolder(paths);
+        }
+      },
+    );
+  }
 
   async sendEmail() {
     const response = await mailchimp.ping.get();
     return response;
+  }
+  async addEips(data: EIPs) {
+    await this.prisma.eIPs.create({
+      data,
+    });
+  }
+  async saveData(writeData: EIPs[]) {
+    console.log(writeData.length);
+    await this.prisma.eIPs.deleteMany({});
+
+    await this.prisma.eIPs.createMany({
+      data: writeData,
+    });
+  }
+}
+
+// const  saveData = (writeData) => {
+//   const paths = 'ETH-EIPs';
+//   let writeDatas = JSON.stringify(writeData);
+//   console.log('开始保存EIPS文件');
+//   fs.writeFileSync('user.json', writeDatas, (err) => {
+//     if (err) {
+//       throw err;
+//     }
+//     console.log('JSON data is saved.');
+//     deleteFolder(paths);
+//     return writeData.length;
+//   });
+
+// };
+const cloneGit = async function () {};
+
+function deleteFolder(filePath) {
+  const files = [];
+  if (fs.existsSync(filePath)) {
+    const files = fs.readdirSync(filePath);
+    files.forEach((file) => {
+      const nextFilePath = `${filePath}/${file}`;
+      const states = fs.statSync(nextFilePath);
+      if (states.isDirectory()) {
+        //recurse
+        deleteFolder(nextFilePath);
+      } else {
+        //delete file
+        fs.unlinkSync(nextFilePath);
+      }
+    });
+    fs.rmdirSync(filePath);
   }
 }

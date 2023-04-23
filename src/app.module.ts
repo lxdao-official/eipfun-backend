@@ -4,9 +4,10 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from 'src/prisma.service';
 import LogsMiddleware from './common/logs.middleware';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [ConfigModule.forRoot()],
+  imports: [ ScheduleModule.forRoot(),ConfigModule.forRoot()],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })

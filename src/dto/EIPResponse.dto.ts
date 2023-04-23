@@ -4,19 +4,22 @@ import { EIPStatus } from '@prisma/client';
 
 export class EIPResponseDto extends EIPBaseDto {
   @IsString()
-  description: EIPStatus;
+  description?: string;
 
   @IsString()
-  discussions_to: string;
+  type: string;
+  
+  @IsString()
+  discussions_to?: string;
 
   @IsDate()
   created: Date;
 
   @IsString()
-  content: string;
+  content?: string;
 
   @IsString()
-  requires: number[];
+  requires?: number[];
 
   @IsString()
   withdrawal_reason?: string;

@@ -55,7 +55,19 @@ export class AppController {
   async search(@Query() filters: EIPsSearchFilters) {
     this.logger.log(filters);
   }
+  @Get('/eips/all')
+  @ApiOperation({ description: 'EIPs list.' })
+  async all() {
 
+
+
+    const {list } = await this.appService.showAll();
+
+    return {
+      data: list,
+     
+    };
+  }
   @Get('/eips/list')
   @ApiOperation({ description: 'EIPs list.' })
   async list(
@@ -83,7 +95,14 @@ export class AppController {
       },
     };
   }
-
+  @Get('/eips/update')
+  @ApiOperation({ description: 'Updata Eips.' })
+ 
+  async updateAllEips() {
+    const result = await this.appService.updateEips();
+    return { data: result };
+  }
+  
   @Post('/email/subscribe')
   @ApiOperation({ description: 'Subscribe email.' })
   @ApiBody({
