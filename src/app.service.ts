@@ -152,8 +152,10 @@ export class AppService {
                       return;
                     }
                     const metaInfo = data.split('---')[1];
+                    const content = data.split('---')[2];
                     const lines = metaInfo.split('\n');
                     //默认值填充
+                    console.log(content)
                     const result = <EIPs>{
                       eip: null,
                       title: '',
@@ -161,7 +163,7 @@ export class AppService {
                       status: null,
                       discussions_to: null,
                       author: '',
-                      content: '',
+                      content: content,
                       extension_sub_title: null,
                       extension_short_read: null,
                       createdAt: new Date(),
