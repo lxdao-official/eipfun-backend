@@ -58,15 +58,9 @@ export class AppController {
   @ApiOperation({ description: 'Search EIPs.' })
   async search(@Query() filters: EIPsSearchFilters) {
     this.logger.log(filters);
-  }
-
-  @Get('/eips/all')
-  @ApiOperation({ description: 'EIPs list.' })
-  async all() {
-    const { list } = await this.appService.showAll();
-
+    const result = await this.appService.search();
     return {
-      data: list,
+      data: result,
     };
   }
 
@@ -75,9 +69,9 @@ export class AppController {
   async list(
     @Query() filters: EIPsFilters,
   ): Promise<ResponseData<EIPBaseDto[]>> {
-    const currentPage = Number(filters.page) || 1;
+    const currentPage = Number(filters.page) || 0;
     const perPage = Number(filters.per_page) || 20;
-    const skip = (currentPage - 1) * perPage;
+    const skip = currentPage * perPage;
 
     const { total, list } = await this.appService.findAll(
       filters.type,

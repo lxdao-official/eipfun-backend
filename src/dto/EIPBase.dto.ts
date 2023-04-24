@@ -3,7 +3,7 @@ import { EIPStatus } from '@prisma/client';
 
 export class EIPBaseDto {
   @IsNumber()
-  eip: number;
+  eip: string;
 
   @IsString()
   status: EIPStatus;

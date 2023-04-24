@@ -42,7 +42,7 @@ model EmailSubscribe {
 
 model EIPs {
     id                      Int                @id @default(autoincrement())
-    eip                     Int                @unique
+    eip                     String             @unique
     title                   String
     description             String?
     author                  String

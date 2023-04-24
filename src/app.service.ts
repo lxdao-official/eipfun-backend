@@ -64,13 +64,15 @@ export class AppService {
       list,
     };
   }
-  async showAll() {
-    const list = await this.prisma.eIPs.findMany();
+
+  async search() {
+    const list = await this.prisma.$queryRaw``;
 
     return {
       list,
     };
   }
+
   isEmail(email): boolean {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (emailPattern.test(email)) {
@@ -130,6 +132,7 @@ export class AppService {
 
     return add_update_response;
   }
+
   async updateEips() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this;
@@ -194,7 +197,7 @@ export class AppService {
                       const value: string = parts[1];
                       if (field) {
                         if (field === 'eip') {
-                          result['eip'] = Number(value);
+                          result['eip'] = value;
                         } else if (field === 'requires') {
                           result[field] = value.split(', ').map((eip) => {
                             return Number(eip);

@@ -19,7 +19,7 @@ CREATE TABLE "EmailSubscribe" (
 -- CreateTable
 CREATE TABLE "EIPs" (
     "id" SERIAL NOT NULL,
-    "eip" INTEGER NOT NULL,
+    "eip" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
     "author" TEXT NOT NULL,
