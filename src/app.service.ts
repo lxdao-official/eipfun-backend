@@ -19,6 +19,7 @@ export class AppService {
   async findAll(
     type?: EIPType,
     category?: EIPCategory,
+    status?: EIPStatus,
     skip?: number,
     take?: number,
   ) {
@@ -26,6 +27,15 @@ export class AppService {
       type: type,
       category: category,
     };
+    if (type) {
+      where['type'] = type;
+    }
+    if (category) {
+      where['category'] = category;
+    }
+    if (status) {
+      where['status'] = status;
+    }
     const find = {
       where,
       select: {
@@ -38,6 +48,9 @@ export class AppService {
       },
       skip: skip,
       take: take,
+      orderBy: {
+        eip: Prisma.SortOrder.asc,
+      },
     };
 
     const total = await this.prisma.eIPs.count({
@@ -118,6 +131,7 @@ export class AppService {
     return add_update_response;
   }
   async updateEips() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this;
     const paths = './ETH-EIPs/';
     console.log('开始清理文件夹');
@@ -155,7 +169,6 @@ export class AppService {
                     const content = data.split('---')[2];
                     const lines = metaInfo.split('\n');
                     //默认值填充
-                    console.log(content)
                     const result = <EIPs>{
                       eip: null,
                       title: '',
@@ -181,20 +194,20 @@ export class AppService {
                       const value: string = parts[1];
                       if (field) {
                         if (field === 'eip') {
-                          // @ts-ignore
-                          result[field] = value * 1;
+                          result['eip'] = Number(value);
                         } else if (field === 'requires') {
-                          // @ts-ignore
                           result[field] = value.split(', ').map((eip) => {
                             return Number(eip);
                           });
                         } else if (field === 'type') {
+                          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                           // @ts-ignore
                           result[field] = value;
                           if (value === 'Standards Track') {
                             result[field] = EIPType.Standards_Track;
                           }
                         } else if (field === 'status') {
+                          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                           // @ts-ignore
                           result[field] = value;
                           if (value === 'Last Call') {

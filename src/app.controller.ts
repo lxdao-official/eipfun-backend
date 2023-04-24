@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Query, Logger, Body } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ApiBody, ApiOperation, ApiParam, ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
-import { EIPs, EIPType, EIPCategory, Prisma } from '@prisma/client';
+import { EIPs, EIPType, EIPCategory, EIPStatus, Prisma } from '@prisma/client';
 import { EIPBaseDto } from './dto/EIPBase.dto';
 import { BusinessException } from './common/business.exception';
 
@@ -24,18 +24,22 @@ class EIPsSearchFilters {
 
 class EIPsFilters {
   @ApiProperty({ description: 'EIP type', required: false, type: String })
+  @IsString()
   type?: EIPType;
 
   @ApiProperty({ description: 'EIP category', required: false, type: String })
+  @IsString()
   category?: EIPCategory;
 
-  @IsInt()
-  @Type(() => Number)
+  @ApiProperty({ description: 'EIP status', required: false, type: String })
+  @IsString()
+  status?: EIPStatus;
+
+  @IsNumber()
   @ApiProperty({ description: 'Page index.', required: false, type: Number })
   page?: number;
 
-  @IsInt()
-  @Type(() => Number)
+  @IsNumber()
   @ApiProperty({
     description: 'Records per page.',
     required: false,
@@ -55,6 +59,7 @@ export class AppController {
   async search(@Query() filters: EIPsSearchFilters) {
     this.logger.log(filters);
   }
+
   @Get('/eips/all')
   @ApiOperation({ description: 'EIPs list.' })
   async all() {
@@ -64,20 +69,20 @@ export class AppController {
       data: list,
     };
   }
+
   @Get('/eips/list')
   @ApiOperation({ description: 'EIPs list.' })
   async list(
     @Query() filters: EIPsFilters,
   ): Promise<ResponseData<EIPBaseDto[]>> {
-    this.logger.log(filters);
-
-    const currentPage = filters.page || 1;
-    const perPage = filters.per_page || 20;
+    const currentPage = Number(filters.page) || 1;
+    const perPage = Number(filters.per_page) || 20;
     const skip = (currentPage - 1) * perPage;
 
     const { total, list } = await this.appService.findAll(
       filters.type,
       filters.category,
+      filters.status,
       skip,
       perPage,
     );
@@ -91,6 +96,7 @@ export class AppController {
       },
     };
   }
+
   @Get('/eips/update')
   @ApiOperation({ description: 'Updata Eips.' })
   async updateAllEips() {
