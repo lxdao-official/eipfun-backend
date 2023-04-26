@@ -5,9 +5,20 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from 'src/prisma.service';
 import LogsMiddleware from './common/logs.middleware';
 import { ScheduleModule } from '@nestjs/schedule';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
-  imports: [ ScheduleModule.forRoot(),ConfigModule.forRoot()],
+  imports: [
+    ScheduleModule.forRoot(),
+    ConfigModule.forRoot(),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      url: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    }),
+  ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })

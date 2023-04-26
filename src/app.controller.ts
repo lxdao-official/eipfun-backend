@@ -57,8 +57,7 @@ export class AppController {
   @Get('/eips/search')
   @ApiOperation({ description: 'Search EIPs.' })
   async search(@Query() filters: EIPsSearchFilters) {
-    this.logger.log(filters);
-    const result = await this.appService.search();
+    const result = await this.appService.search(filters.content);
     return {
       data: result,
     };

@@ -7,9 +7,15 @@ import * as fs from 'fs';
 import * as download from 'download-git-repo';
 import * as path from 'path';
 
+import { DataSource } from 'typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
+
 @Injectable()
 export class AppService {
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    @InjectDataSource() private readonly connection: DataSource,
+  ) {
     mailchimp.setConfig({
       apiKey: process.env.MAILCHIMP_API_KEY,
       server: 'us17',
@@ -65,12 +71,41 @@ export class AppService {
     };
   }
 
-  async search() {
-    const list = await this.prisma.$queryRaw``;
+  isNumeric(str: any) {
+    if (typeof str != 'string') return false;
+    return !isNaN(Number(str)) && !isNaN(parseFloat(str));
+  }
 
-    return {
-      list,
-    };
+  async search(content: string) {
+    const result = {};
+
+    // eip match
+    if (this.isNumeric(content)) {
+      const eipRecords = await this.connection.query(
+        `SELECT eip FROM "EIPs" WHERE eip='${content}'`,
+      );
+      if (eipRecords && eipRecords.length > 0) {
+        result['eip_list'] = eipRecords;
+      }
+    }
+
+    // title match
+    const titleRecords = await this.connection.query(
+      `SELECT eip, ts_headline(title, q), rank FROM (SELECT eip, title, q, ts_rank_cd(title_ts, q) AS rank FROM "EIPs", to_tsquery('${content}') q WHERE title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+    );
+    if (titleRecords && titleRecords.length > 0) {
+      result['title_list'] = titleRecords;
+    }
+
+    // content match
+    const contentRecords = await this.connection.query(
+      `SELECT eip, ts_headline(content, q), rank FROM (SELECT eip, content, q, ts_rank_cd(content_ts, q) AS rank FROM "EIPs", to_tsquery('${content}') q WHERE content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+    );
+    if (contentRecords && contentRecords.length > 0) {
+      result['content_list'] = contentRecords;
+    }
+
+    return result;
   }
 
   isEmail(email): boolean {
