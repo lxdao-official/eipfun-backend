@@ -82,7 +82,7 @@ export class AppService {
     // eip match
     if (this.isNumeric(content)) {
       const eipRecords = await this.connection.query(
-        `SELECT eip FROM "EIPs" WHERE eip='${content}'`,
+        `SELECT eip, title FROM "EIPs" WHERE eip='${content}'`,
       );
       if (eipRecords && eipRecords.length > 0) {
         result['eip_list'] = eipRecords;
@@ -99,7 +99,7 @@ export class AppService {
 
     // content match
     const contentRecords = await this.connection.query(
-      `SELECT eip, ts_headline(content, q), rank FROM (SELECT eip, content, q, ts_rank_cd(content_ts, q) AS rank FROM "EIPs", phraseto_tsquery('${content}') q WHERE content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+      `SELECT eip, title, ts_headline(content, q), rank FROM (SELECT eip, title, content, q, ts_rank_cd(content_ts, q) AS rank FROM "EIPs", phraseto_tsquery('${content}') q WHERE content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
     );
     if (contentRecords && contentRecords.length > 0) {
       result['content_list'] = contentRecords;
