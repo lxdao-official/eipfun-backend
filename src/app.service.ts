@@ -51,6 +51,7 @@ export class AppService {
         author: true,
         status: true,
         type: true,
+        category: true,
       },
       skip: skip,
       take: take,
