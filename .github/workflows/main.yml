@@ -37,4 +37,4 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            /home/ubuntu/apps/api-dev.eips.fun.sh 653640199626.dkr.ecr.us-west-2.amazonaws.com/eipsfun:${{ github.sha }}
+            /home/ubuntu/apps/api.eips.fun.sh 653640199626.dkr.ecr.us-west-2.amazonaws.com/eipsfun:${{ github.sha }}
