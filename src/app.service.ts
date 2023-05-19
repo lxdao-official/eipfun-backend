@@ -29,42 +29,34 @@ export class AppService {
     skip?: number,
     take?: number,
   ) {
+    let condition = '';
     const where = {
       type: type,
       category: category,
     };
     if (type) {
       where['type'] = type;
+      condition += `'type=${type} `;
     }
     if (category) {
       where['category'] = category;
+      condition += `'category=${category} `;
     }
     if (status) {
       where['status'] = status;
+      condition += `'category=${category} `;
     }
-    const find = {
-      where,
-      select: {
-        id: true,
-        eip: true,
-        title: true,
-        author: true,
-        status: true,
-        type: true,
-        category: true,
-      },
-      skip: skip,
-      take: take,
-      orderBy: {
-        eip: Prisma.SortOrder.asc,
-      },
-    };
+    if (condition.length > 0) {
+      condition = `WHERE ${condition}`;
+    }
 
     const total = await this.prisma.eIPs.count({
       where: where,
     });
 
-    const list = await this.prisma.eIPs.findMany(find);
+    const list = await this.connection.query(
+      `SELECT id, eip, title, author, status, type, category FROM "EIPs" ${condition} order by (substring("eip", '^[0-9]+'))::int LIMIT ${take} OFFSET ${skip}`,
+    );
 
     return {
       total,
