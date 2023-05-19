@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EIPType {
+  Standards_Track @map("Standards Track")
+  Meta
+  Informational
+}
+
+enum EIPCategory {
+  Core
+  Networking
+  Interface
+  ERC
+}
+
+enum EIPStatus {
+  Idea
+  Draft
+  Review
+  Last_Call @map("Last Call")
+  Final
+  Stagnant
+  Withdrawn
+  Living
+}
+
+model EmailSubscribe {
+  id            Int                @id @default(autoincrement())
+  address       String             @unique
+  createdAt     DateTime           @default(now())
+}
+
+model EIPs {
+    id                      Int                @id @default(autoincrement())
+    eip                     String             @unique
+    title                   String
+    description             String?
+    author                  String
+    discussions_to          String?
+    status                  EIPStatus
+    type                    EIPType
+    category                EIPCategory?
+    created                 DateTime
+    requires                Int[]               @default([])
+    last_call_deadline      DateTime?
+    withdrawal_reason       String?
+    content                 String?
+    extension_sub_title     String?
+    extension_short_read    String?
+    createdAt               DateTime            @default(now())
+    updatedAt               DateTime?
+}
