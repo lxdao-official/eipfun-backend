@@ -88,22 +88,22 @@ export class AppService {
       if (eipRecords && eipRecords.length > 0) {
         result['eip_list'] = eipRecords;
       }
-    }
+    } else {
+      // title match
+      const titleRecords = await this.connection.query(
+        `SELECT eip, ts_headline(title, q), rank FROM (SELECT eip, title, q, ts_rank_cd(title_ts, q) AS rank FROM "EIPs", phraseto_tsquery('${content}') q WHERE title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+      );
+      if (titleRecords && titleRecords.length > 0) {
+        result['title_list'] = titleRecords;
+      }
 
-    // title match
-    const titleRecords = await this.connection.query(
-      `SELECT eip, ts_headline(title, q), rank FROM (SELECT eip, title, q, ts_rank_cd(title_ts, q) AS rank FROM "EIPs", phraseto_tsquery('${content}') q WHERE title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
-    );
-    if (titleRecords && titleRecords.length > 0) {
-      result['title_list'] = titleRecords;
-    }
-
-    // content match
-    const contentRecords = await this.connection.query(
-      `SELECT eip, title, ts_headline(content, q), rank FROM (SELECT eip, title, content, q, ts_rank_cd(content_ts, q) AS rank FROM "EIPs", phraseto_tsquery('${content}') q WHERE content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
-    );
-    if (contentRecords && contentRecords.length > 0) {
-      result['content_list'] = contentRecords;
+      // content match
+      const contentRecords = await this.connection.query(
+        `SELECT eip, title, ts_headline(content, q), rank FROM (SELECT eip, title, content, q, ts_rank_cd(content_ts, q) AS rank FROM "EIPs", phraseto_tsquery('${content}') q WHERE content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+      );
+      if (contentRecords && contentRecords.length > 0) {
+        result['content_list'] = contentRecords;
+      }
     }
 
     return result;
