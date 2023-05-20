@@ -222,10 +222,16 @@ export class AppService {
                     for (let q = 0; q < lines.length; q++) {
                       const parts = lines[q].split(': ');
                       const field: string = parts[0];
-                      const value: string = parts[1];
+                      let value: string = parts[1];
+                      //兼容value中包含:的情况
+                      if(parts.length>2){
+                        value = parts.slice(1).join(': ');
+                      }
                       if (field) {
                         if (field === 'eip') {
-                          result['eip'] = value;
+                          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                          // @ts-ignore
+                          result['eip'] = value*1;
                         } else if (field === 'requires') {
                           result[field] = value.split(', ').map((eip) => {
                             return Number(eip);
