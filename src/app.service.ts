@@ -36,15 +36,15 @@ export class AppService {
     };
     if (type) {
       where['type'] = type;
-      condition += `'type=${type} `;
+      condition += `type='${type}' `;
     }
     if (category) {
       where['category'] = category;
-      condition += `'category=${category} `;
+      condition += `category='${category}' `;
     }
     if (status) {
       where['status'] = status;
-      condition += `'category=${category} `;
+      condition += `category='${category}' `;
     }
     if (condition.length > 0) {
       condition = `WHERE ${condition}`;
