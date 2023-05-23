@@ -224,14 +224,12 @@ export class AppService {
                       const field: string = parts[0];
                       let value: string = parts[1];
                       //兼容value中包含:的情况
-                      if(parts.length>2){
+                      if (parts.length > 2) {
                         value = parts.slice(1).join(': ');
                       }
                       if (field) {
                         if (field === 'eip') {
-                          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                          // @ts-ignore
-                          result['eip'] = value*1;
+                          result['eip'] = value;
                         } else if (field === 'requires') {
                           result[field] = value.split(', ').map((eip) => {
                             return Number(eip);
