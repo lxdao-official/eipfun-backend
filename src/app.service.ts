@@ -6,9 +6,14 @@ import * as md5 from 'md5';
 import * as fs from 'fs';
 import * as download from 'download-git-repo';
 import * as path from 'path';
+import { Configuration, OpenAIApi } from 'openai';
 
 import { DataSource } from 'typeorm';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { join } from 'path';
+
+import * as MarkdownIt from 'markdown-it';
+import { ChatCompletionRequestMessage } from 'openai/api';
 
 @Injectable()
 export class AppService {
@@ -294,6 +299,64 @@ export class AppService {
     await this.prisma.eIPs.createMany({
       data: writeData,
     });
+  }
+
+  async generateChatGPTContent() {
+    const configuration = new Configuration({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+    const openai = new OpenAIApi(configuration);
+    try {
+      const mdFileDir = join(__dirname, `../ETH-EIPs/EIPS/eip-4337.md`);
+      const mdFile = fs.readFileSync(mdFileDir, 'utf8');
+
+      const mdContent: [ChatCompletionRequestMessage] = [
+        {
+          role: 'system',
+          content: `I am a beginner in EIP, the all following message are information descriptions about Ethereum Improvement Proposal, 
+          please summarize it to help me learn it quickly, in at most 200 words.`,
+        },
+      ];
+
+      const md = new MarkdownIt();
+      const tokens = md.parse(mdFile, {});
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        if (token.level === 1 && token.type === 'inline') {
+          console.log(i, tokens[i].content);
+          mdContent.push({
+            role: 'user',
+            content: tokens[i].content,
+          });
+          // for (let j = 0; j < children.length; j++) {
+          //   const one = children[j];
+          //   if (one.content.length > 0 && one.type === 'text') {
+          //     console.log('children:', one.type, one.content);
+          //   }
+          // }
+        }
+      }
+
+      // const prompt = `The following review text is Ethereum Improvement Proposal, delimited by triple quotes.
+      // I am a beginner in EIP, please summarize it to help me learn it quickly, in at most 200 words.
+      // Review text: """ ${mdContent} """`;
+      // const completion = await openai.createCompletion({
+      //   model: 'text-davinci-003',
+      //   prompt: prompt,
+      // });
+      const completion = await openai.createChatCompletion({
+        model: 'gpt-3.5-turbo',
+        messages: [...mdContent],
+      });
+      console.log(completion.data.choices[0].message);
+    } catch (error) {
+      if (error.response) {
+        console.log(error.response.status);
+        console.log(error.response.data);
+      } else {
+        console.log(error.message);
+      }
+    }
   }
 }
 

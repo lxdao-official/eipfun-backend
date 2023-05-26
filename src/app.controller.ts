@@ -130,9 +130,9 @@ export class AppController {
     return result;
   }
 
-  // @Post('/email/send')
-  // async sendEEmail() {
-  //   const result = await this.appService.pingEMailService();
-  //   return result;
-  // }
+  @Post('/openai/gen')
+  async openaiGen() {
+    const result = await this.appService.generateChatGPTContent();
+    return result;
+  }
 }
