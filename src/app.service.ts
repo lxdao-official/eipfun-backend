@@ -44,7 +44,7 @@ export class AppService {
     }
     if (status) {
       where['status'] = status;
-      condition += `category='${category}' `;
+      condition += `status='${status}' `;
     }
     if (condition.length > 0) {
       condition = `WHERE ${condition}`;
