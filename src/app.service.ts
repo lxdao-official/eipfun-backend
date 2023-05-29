@@ -44,10 +44,15 @@ export class AppService {
     }
     if (status) {
       where['status'] = status;
+
+      let replace: string = status;
+      if (replace === EIPStatus.Last_Call) {
+        replace = 'Last Call';
+      }
       condition +=
         condition.length > 0
-          ? `and status='${status}' `
-          : `status='${status}' `;
+          ? `and status='${replace}' `
+          : `status='${replace}' `;
     }
     if (condition.length > 0) {
       condition = `WHERE ${condition}`;
