@@ -30,21 +30,24 @@ export class AppService {
     take?: number,
   ) {
     let condition = '';
-    const where = {
-      type: type,
-      category: category,
-    };
+    const where = {};
     if (type) {
       where['type'] = type;
       condition += `type='${type}' `;
     }
     if (category) {
       where['category'] = category;
-      condition += `category='${category}' `;
+      condition +=
+        condition.length > 0
+          ? `and category='${category}' `
+          : `category='${category}' `;
     }
     if (status) {
       where['status'] = status;
-      condition += `status='${status}' `;
+      condition +=
+        condition.length > 0
+          ? `and status='${status}' `
+          : `status='${status}' `;
     }
     if (condition.length > 0) {
       condition = `WHERE ${condition}`;
