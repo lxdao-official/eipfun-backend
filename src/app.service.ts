@@ -242,7 +242,9 @@ export class AppService {
                           result[field] = value.split(', ').map((eip) => {
                             return Number(eip);
                           });
-                        } else if (field === 'type') {
+                        } else if (field === 'title') {
+                          result[field] = value.replace(/^,+|"+$/g, '').replace(/^,+|'+$/g, '');
+                        }else if (field === 'type') {
                           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                           // @ts-ignore
                           result[field] = value;
@@ -267,8 +269,7 @@ export class AppService {
                         } else {
                           if (field === 'updated') {
                           } else {
-                            //取出头尾的'
-                            result[field] = value.replace(/^,+|"+$/g, '')
+                            result[field] = value;
                           }
                         }
                       }
