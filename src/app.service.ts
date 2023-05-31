@@ -243,7 +243,7 @@ export class AppService {
                             return Number(eip);
                           });
                         } else if (field === 'title') {
-                          result[field] = value.replace(/^,+|"+$/g, '').replace(/^,+|'+$/g, '');
+                          result[field] = value.replace(/^\"|\"$/g,'');
                         }else if (field === 'type') {
                           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                           // @ts-ignore
