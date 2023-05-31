@@ -267,7 +267,8 @@ export class AppService {
                         } else {
                           if (field === 'updated') {
                           } else {
-                            result[field] = value;
+                            //取出头尾的'
+                            result[field] = value.replace(/^,+|'+$/g, '')
                           }
                         }
                       }
