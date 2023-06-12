@@ -83,7 +83,7 @@ export class AppService {
     // eip match
     if (this.isNumeric(content)) {
       const eipRecords = await this.connection.query(
-        `SELECT eip, title FROM "EIPs" WHERE eip='${content}'`,
+        `SELECT eip, title, type, category FROM "EIPs" WHERE eip='${content}'`,
       );
       if (eipRecords && eipRecords.length > 0) {
         result['eip_list'] = eipRecords;
@@ -91,7 +91,7 @@ export class AppService {
     } else {
       // title match
       const titleRecords = await this.connection.query(
-        `SELECT eip, ts_headline(title, q), rank FROM (SELECT eip, title, q, ts_rank_cd(title_ts, q) AS rank FROM "EIPs", phraseto_tsquery('${content}') q WHERE title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+        `SELECT eip, type, category, ts_headline(title, q), rank FROM (SELECT eip, type, category, title, q, ts_rank_cd(title_ts, q) AS rank FROM "EIPs", phraseto_tsquery('${content}') q WHERE title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
       );
       if (titleRecords && titleRecords.length > 0) {
         result['title_list'] = titleRecords;
@@ -99,7 +99,7 @@ export class AppService {
 
       // content match
       const contentRecords = await this.connection.query(
-        `SELECT eip, title, ts_headline(content, q), rank FROM (SELECT eip, title, content, q, ts_rank_cd(content_ts, q) AS rank FROM "EIPs", phraseto_tsquery('${content}') q WHERE content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+        `SELECT eip, type, category, title, ts_headline(content, q), rank FROM (SELECT eip, type, category, title, content, q, ts_rank_cd(content_ts, q) AS rank FROM "EIPs", phraseto_tsquery('${content}') q WHERE content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
       );
       if (contentRecords && contentRecords.length > 0) {
         result['content_list'] = contentRecords;
@@ -243,8 +243,8 @@ export class AppService {
                             return Number(eip);
                           });
                         } else if (field === 'title') {
-                          result[field] = value.replace(/^\"|\"$/g,'');
-                        }else if (field === 'type') {
+                          result[field] = value.replace(/^\"|\"$/g, '');
+                        } else if (field === 'type') {
                           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                           // @ts-ignore
                           result[field] = value;
