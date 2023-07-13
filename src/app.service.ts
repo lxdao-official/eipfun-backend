@@ -10,6 +10,8 @@ import * as path from 'path';
 import { DataSource } from 'typeorm';
 import { InjectDataSource } from '@nestjs/typeorm';
 
+import { Cron, CronExpression } from '@nestjs/schedule';
+
 @Injectable()
 export class AppService {
   constructor(
@@ -304,6 +306,11 @@ export class AppService {
     await this.prisma.eIPs.createMany({
       data: writeData,
     });
+  }
+
+  @Cron(CronExpression.EVERY_WEEK)
+  async handleCheckUpdate() {
+    await this.updateEips();
   }
 }
 
