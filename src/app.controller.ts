@@ -90,12 +90,12 @@ export class AppController {
     };
   }
 
-  @Get('/eips/update')
-  @ApiOperation({ description: 'Updata Eips.' })
-  async updateAllEips() {
-    const result = await this.appService.updateEips();
-    return { data: result };
-  }
+  // @Get('/eips/update')
+  // @ApiOperation({ description: 'Updata Eips.' })
+  // async updateAllEips() {
+  //   const result = await this.appService.updateEips();
+  //   return { data: result };
+  // }
 
   @Post('/email/subscribe')
   @ApiOperation({ description: 'Subscribe email.' })
@@ -124,11 +124,11 @@ export class AppController {
     return { data: result };
   }
 
-  @Post('/email/ping')
-  async pingEMail() {
-    const result = await this.appService.pingEMailService();
-    return result;
-  }
+  // @Post('/email/ping')
+  // async pingEMail() {
+  //   const result = await this.appService.pingEMailService();
+  //   return result;
+  // }
 
   // @Post('/email/send')
   // async sendEEmail() {
