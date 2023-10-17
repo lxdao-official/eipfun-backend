@@ -92,7 +92,7 @@ export class AppService {
     } else {
       // title match
       const titleRecords = await this.connection.query(
-        `SELECT eip, type, category, ts_headline(title, q), rank FROM (SELECT eip, type, category, title, q, ts_rank_cd(title_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${content}') q WHERE title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+        `SELECT eip, type, category, ts_headline('english',title, q), rank FROM (SELECT eip, type, category, title, q, ts_rank_cd(title_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${content}') q WHERE title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
       );
 
       if (titleRecords && titleRecords.length > 0) {
@@ -101,7 +101,7 @@ export class AppService {
 
       // content match
       const contentRecords = await this.connection.query(
-        `SELECT eip, type, category, title, ts_headline(content, q), rank FROM (SELECT eip, type, category, title, content, q, ts_rank_cd(content_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${content}') q WHERE content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+        `SELECT eip, type, category, title, ts_headline('english',content, q), rank FROM (SELECT eip, type, category, title, content, q, ts_rank_cd(content_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${content}') q WHERE content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
       );
       if (contentRecords && contentRecords.length > 0) {
         result['content_list'] = contentRecords;
