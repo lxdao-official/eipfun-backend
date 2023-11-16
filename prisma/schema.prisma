@@ -32,6 +32,7 @@ enum EIPStatus {
   Stagnant
   Withdrawn
   Living
+  Moved
 }
 
 model EmailSubscribe {
@@ -48,9 +49,9 @@ model EIPs {
     author                  String
     discussions_to          String?
     status                  EIPStatus
-    type                    EIPType
+    type                    EIPType?
     category                EIPCategory?
-    created                 DateTime
+    created                 DateTime?
     requires                Int[]               @default([])
     last_call_deadline      DateTime?
     withdrawal_reason       String?
