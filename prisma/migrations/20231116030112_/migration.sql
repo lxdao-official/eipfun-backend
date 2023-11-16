@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "EIPs" ALTER COLUMN "type" DROP NOT NULL;

@@ -80,35 +80,38 @@ export class AppService {
   }
 
   async search(content: string) {
-    const result = {};
-    // eip match
-    if (this.isNumeric(content)) {
-      const eipRecords = await this.connection.query(
-        `SELECT eip, title, type, category FROM "EIPs" WHERE eip='${content}'`,
-      );
-      if (eipRecords && eipRecords.length > 0) {
-        result['eip_list'] = eipRecords;
-      }
-    } else {
-      // title match
-      const titleRecords = await this.connection.query(
-        `SELECT eip, type, category, ts_headline('english',title, q), rank FROM (SELECT eip, type, category, title, q, ts_rank_cd(title_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${content}') q WHERE title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
-      );
+    try {
+      const result = {};
+      // eip match
+      if (this.isNumeric(content)) {
+        const eipRecords = await this.connection.query(
+          `SELECT eip, title, type, category FROM "EIPs" WHERE eip='${content}'`,
+        );
+        if (eipRecords && eipRecords.length > 0) {
+          result['eip_list'] = eipRecords;
+        }
+      } else {
+        // title match
+        const titleRecords = await this.connection.query(
+          `SELECT eip, type, category, ts_headline('english',title, q), rank FROM (SELECT eip, type, category, title, q, ts_rank_cd(title_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${content}') q WHERE title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+        );
 
-      if (titleRecords && titleRecords.length > 0) {
-        result['title_list'] = titleRecords;
-      }
+        if (titleRecords && titleRecords.length > 0) {
+          result['title_list'] = titleRecords;
+        }
 
-      // content match
-      const contentRecords = await this.connection.query(
-        `SELECT eip, type, category, title, ts_headline('english',content, q), rank FROM (SELECT eip, type, category, title, content, q, ts_rank_cd(content_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${content}') q WHERE content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
-      );
-      if (contentRecords && contentRecords.length > 0) {
-        result['content_list'] = contentRecords;
+        // content match
+        const contentRecords = await this.connection.query(
+          `SELECT eip, type, category, title, ts_headline('english',content, q), rank FROM (SELECT eip, type, category, title, content, q, ts_rank_cd(content_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${content}') q WHERE content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+        );
+        if (contentRecords && contentRecords.length > 0) {
+          result['content_list'] = contentRecords;
+        }
       }
+      return result;
+    } catch (err) {
+      console.log(err);
     }
-
-    return result;
   }
 
   isEmail(email): boolean {
@@ -171,6 +174,91 @@ export class AppService {
     return add_update_response;
   }
 
+  formateData(data: any) {
+    const metaInfo = data.split('---')[1];
+    const content = data.split('---')[2];
+    const lines = metaInfo.split('\n');
+    //默认值填充
+    const result = <EIPs>{
+      eip: null,
+      title: '',
+      description: '',
+      status: null,
+      discussions_to: null,
+      author: '',
+      content: content,
+      extension_sub_title: null,
+      extension_short_read: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      type: null,
+      category: null,
+      requires: [],
+      created: null,
+      last_call_deadline: null,
+      withdrawal_reason: null,
+    };
+    for (let q = 0; q < lines.length; q++) {
+      const parts = lines[q].split(': ');
+      const field: string = parts[0];
+      let value: string = parts[1];
+      //兼容value中包含:的情况
+      if (parts.length > 2) {
+        value = parts.slice(1).join(': ');
+      }
+      if (field) {
+        if (field === 'eip') {
+          result['eip'] = value;
+        } else if (field === 'requires') {
+          result[field] = value.split(', ').map((eip) => {
+            return Number(eip);
+          });
+        } else if (field === 'title') {
+          result[field] = value.replace(/^\"|\"$/g, '');
+        } else if (field === 'type') {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          result[field] = value;
+          if (value === 'Standards Track') {
+            result[field] = EIPType.Standards_Track;
+          }
+        } else if (field === 'status') {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          result[field] = value;
+          if (value === 'Last Call') {
+            result[field] = EIPStatus.Last_Call;
+          }
+        } else if (field === 'created') {
+          result[field] = new Date(value);
+        } else if (field === 'last-call-deadline') {
+          result['last_call_deadline'] = new Date(value);
+        } else if (field === 'discussions-to') {
+          result['discussions_to'] = value;
+        } else if (field === 'withdrawal-reason') {
+          result['withdrawal_reason'] = value;
+        } else {
+          if (field === 'updated') {
+          } else {
+            result[field] = value;
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  async downloadErcs() {
+    const paths = './ETH-ERCS/';
+    deleteFolder(paths);
+    download(
+      'direct:https://github.com/ethereum/ERCs.git',
+      'ETH-ERCS',
+      { clone: true },
+      () => console.log('下载完成'),
+    );
+  }
+
   async updateEips() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this;
@@ -192,10 +280,12 @@ export class AppService {
               console.error(err);
               return;
             }
-            (function getFileMeta(i) {
+            (async function getFileMeta(i) {
+              console.log(i, files.length);
+
               if (i === files.length) {
                 console.log('解析EIPS文件完成');
-                that.saveData(writeData);
+                await that.saveData(writeData);
                 console.log('写入DB完成');
               } else {
                 fs.readFile(
@@ -206,77 +296,20 @@ export class AppService {
                       console.log('读取文件失败', err);
                       return;
                     }
-                    const metaInfo = data.split('---')[1];
-                    const content = data.split('---')[2];
-                    const lines = metaInfo.split('\n');
-                    //默认值填充
-                    const result = <EIPs>{
-                      eip: null,
-                      title: '',
-                      description: '',
-                      status: null,
-                      discussions_to: null,
-                      author: '',
-                      content: content,
-                      extension_sub_title: null,
-                      extension_short_read: null,
-                      createdAt: new Date(),
-                      updatedAt: new Date(),
-                      type: null,
-                      category: null,
-                      requires: [],
-                      created: null,
-                      last_call_deadline: null,
-                      withdrawal_reason: null,
-                    };
-                    for (let q = 0; q < lines.length; q++) {
-                      const parts = lines[q].split(': ');
-                      const field: string = parts[0];
-                      let value: string = parts[1];
-                      //兼容value中包含:的情况
-                      if (parts.length > 2) {
-                        value = parts.slice(1).join(': ');
-                      }
-                      if (field) {
-                        if (field === 'eip') {
-                          result['eip'] = value;
-                        } else if (field === 'requires') {
-                          result[field] = value.split(', ').map((eip) => {
-                            return Number(eip);
-                          });
-                        } else if (field === 'title') {
-                          result[field] = value.replace(/^\"|\"$/g, '');
-                        } else if (field === 'type') {
-                          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                          // @ts-ignore
-                          result[field] = value;
-                          if (value === 'Standards Track') {
-                            result[field] = EIPType.Standards_Track;
-                          }
-                        } else if (field === 'status') {
-                          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                          // @ts-ignore
-                          result[field] = value;
-                          if (value === 'Last Call') {
-                            result[field] = EIPStatus.Last_Call;
-                          }
-                        } else if (field === 'created') {
-                          result[field] = new Date(value);
-                        } else if (field === 'last-call-deadline') {
-                          result['last_call_deadline'] = new Date(value);
-                        } else if (field === 'discussions-to') {
-                          result['discussions_to'] = value;
-                        } else if (field === 'withdrawal-reason') {
-                          result['withdrawal_reason'] = value;
-                        } else {
-                          if (field === 'updated') {
-                          } else {
-                            result[field] = value;
-                          }
-                        }
-                      }
+                    const result = that.formateData(data);
+                    if (result.status !== 'Moved') {
+                      writeData.push(result);
+                    } else {
+                      const ercDirectory = './ETH-ERCS/ERCS/';
+                      const id = files[i].split('-')[1];
+                      const fsInfo = fs.readFileSync(
+                        path.join(ercDirectory, `erc-${id}`),
+                        'utf8',
+                      );
+                      const ercData = that.formateData(fsInfo);
+                      writeData.push(ercData);
                     }
-                    writeData.push(result);
+
                     getFileMeta(i + 1);
                   },
                 );
@@ -284,7 +317,7 @@ export class AppService {
             })(0);
           });
         } else {
-          console.log(err);
+          // console.log(err);
           deleteFolder(paths);
         }
       },
@@ -297,15 +330,19 @@ export class AppService {
   }
 
   async saveData(writeData: EIPs[]) {
-    // console.log(writeData.length);
-    await this.prisma.eIPs.deleteMany({});
-    // for (const item of writeData) {
-    //   console.log('item:', item);
-    //   await this.prisma.eIPs.create({ data: item });
-    // }
-    await this.prisma.eIPs.createMany({
-      data: writeData,
-    });
+    try {
+      // console.log(writeData.length);
+      await this.prisma.eIPs.deleteMany({});
+      // for (const item of writeData) {
+      //   console.log('item:', item);
+      //   await this.prisma.eIPs.create({ data: item });
+      // }
+      await this.prisma.eIPs.createMany({
+        data: writeData,
+      });
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   @Cron(CronExpression.EVERY_WEEK)

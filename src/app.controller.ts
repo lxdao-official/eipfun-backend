@@ -97,6 +97,13 @@ export class AppController {
     return { data: result };
   }
 
+  @Get('/ercs/download')
+  @ApiOperation({ description: 'download Ecs.' })
+  async downloadErcs() {
+    const result = await this.appService.downloadErcs();
+    return { data: result };
+  }
+
   @Post('/email/subscribe')
   @ApiOperation({ description: 'Subscribe email.' })
   @ApiBody({

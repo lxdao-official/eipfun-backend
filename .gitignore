@@ -36,4 +36,5 @@ lerna-debug.log*
 
 #ETH-EIPs
 ETH-EIPs/*
+ETH-ERCS/*
 .env

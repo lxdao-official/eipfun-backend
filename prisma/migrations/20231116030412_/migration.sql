@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "EIPs" ALTER COLUMN "created" DROP NOT NULL;
