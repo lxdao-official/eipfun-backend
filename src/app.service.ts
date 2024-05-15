@@ -251,12 +251,21 @@ export class AppService {
   async downloadErcs() {
     const paths = './ETH-ERCS/';
     deleteFolder(paths);
-    download(
-      'direct:https://github.com/ethereum/ERCs.git',
-      'ETH-ERCS',
-      { clone: true },
-      () => console.log('下载完成'),
-    );
+    return new Promise(function (res, rej) {
+      download(
+        'direct:https://github.com/ethereum/ERCs.git',
+        'ETH-ERCS',
+        { clone: true },
+        function (err) {
+          if (err) {
+            rej(err);
+          } else {
+            res('download ERC success!');
+            console.log('下载完成');
+          }
+        },
+      );
+    });
   }
 
   async updateEips() {
@@ -266,6 +275,7 @@ export class AppService {
     console.log('开始清理文件夹');
     deleteFolder(paths);
     console.log('清理文件夹成功');
+    await this.downloadErcs();
     download(
       'direct:https://github.com/ethereum/EIPs.git',
       'ETH-EIPs',
