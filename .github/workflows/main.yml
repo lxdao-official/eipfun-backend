@@ -32,7 +32,7 @@ jobs:
       - name: Deploy to dokku
         uses: appleboy/ssh-action@master
         with:
-          host: api.eips.fun
+          host: api.eip.fun
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
