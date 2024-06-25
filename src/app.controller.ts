@@ -52,7 +52,7 @@ class EIPsFilters {
 export class AppController {
   private readonly logger = new Logger('App');
 
-  constructor(private readonly appService: AppService) {}
+  constructor(private readonly appService: AppService) { }
 
   @Get('/eips/search')
   @ApiOperation({ description: 'Search EIPs.' })
@@ -90,12 +90,12 @@ export class AppController {
     };
   }
 
-  // @Get('/eips/update')
-  // @ApiOperation({ description: 'Updata Eips.' })
-  // async updateAllEips() {
-  //   const result = await this.appService.updateEips();
-  //   return { data: result };
-  // }
+  @Get('/eips/update')
+  @ApiOperation({ description: 'Updata Eips.' })
+  async updateAllEips() {
+    const result = await this.appService.updateEips();
+    return { data: result };
+  }
 
   @Get('/ercs/download')
   @ApiOperation({ description: 'download Ecs.' })
