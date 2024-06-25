@@ -14,9 +14,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL,
-      // ssl: {
-      //   rejectUnauthorized: false,
-      // },
+      ssl: {
+        rejectUnauthorized: false,
+      },
     }),
   ],
   controllers: [AppController],
