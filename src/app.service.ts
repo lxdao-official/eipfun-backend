@@ -248,6 +248,26 @@ export class AppService {
     return result;
   }
 
+  async downloadEips() {
+    const paths = './ETH-EIPS/';
+    deleteFolder(paths);
+    return new Promise(function (res, rej) {
+      download(
+        'direct:https://github.com/ethereum/EIPs.git',
+        'ETH-EIPs',
+        { clone: true },
+        function (err) {
+          if (err) {
+            rej(err);
+          } else {
+            res('download EIP success!');
+            console.log('download EIP success!');
+          }
+        },
+      );
+    });
+  }
+
   async downloadErcs() {
     const paths = './ETH-ERCS/';
     deleteFolder(paths);
@@ -261,7 +281,7 @@ export class AppService {
             rej(err);
           } else {
             res('download ERC success!');
-            console.log('下载完成');
+            console.log('download ERC success!');
           }
         },
       );
@@ -271,67 +291,77 @@ export class AppService {
   async updateEips() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this;
-    const paths = './ETH-EIPs/';
-    console.log('开始清理文件夹');
-    deleteFolder(paths);
-    console.log('清理文件夹成功');
     await this.downloadErcs();
-    download(
-      'direct:https://github.com/ethereum/EIPs.git',
-      'ETH-EIPs',
-      { clone: true },
-      (err) => {
-        console.log(err ? '拉取Error' : '拉取Success');
-        if (!err) {
-          const writeData = [];
-          const directory = './ETH-EIPs/EIPS/';
-          fs.readdir(directory, (err, files) => {
+    await this.downloadEips();
+
+    const writeData = [];
+    const directory = './ETH-EIPs/EIPS/';
+    // erc
+    const getArr = async (path: string, type: 'eip' | 'erc') => {
+      let files;
+      try {
+        files = await fs.promises.readdir(path);
+      } catch (err) {
+        console.error(err);
+        return [];
+      }
+      return files.map((f) => f.replace(type + '-', ''));
+    };
+
+    const eipArr = await getArr('./ETH-EIPs/EIPS/', 'eip');
+    const ercArr = await getArr('./ETH-ERCS/ERCS/', 'erc');
+    const ercNew = ercArr.filter((item) => !eipArr.includes(item));
+    ercNew.shift();
+    ercNew.forEach(async (item) => {
+      let fileInfo;
+      try {
+        fileInfo = await fs.promises.readFile(
+          path.join('./ETH-ERCS/ERCS/', `erc-${item}`),
+          'utf8',
+        );
+        const ercData = this.formateData(fileInfo);
+        writeData.push(ercData);
+      } catch (err) {
+        console.error(err);
+        return;
+      }
+    });
+
+    fs.readdir(directory, async (err, files) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+      (async function getFileMeta(i) {
+        if (i === files.length) {
+          console.log('解析EIPS文件完成');
+          await that.saveData(writeData);
+          console.log('写入DB完成');
+        } else {
+          fs.readFile(path.join(directory, files[i]), 'utf8', (err, data) => {
             if (err) {
-              console.error(err);
+              console.log('读取文件失败', err);
               return;
             }
-            (async function getFileMeta(i) {
-              console.log(i, files.length);
+            const result = that.formateData(data);
+            if (result.status !== 'Moved') {
+              writeData.push(result);
+            } else {
+              const ercDirectory = './ETH-ERCS/ERCS/';
+              const id = files[i].split('-')[1];
+              const fsInfo = fs.readFileSync(
+                path.join(ercDirectory, `erc-${id}`),
+                'utf8',
+              );
+              const ercData = that.formateData(fsInfo);
+              writeData.push(ercData);
+            }
 
-              if (i === files.length) {
-                console.log('解析EIPS文件完成');
-                await that.saveData(writeData);
-                console.log('写入DB完成');
-              } else {
-                fs.readFile(
-                  path.join(directory, files[i]),
-                  'utf8',
-                  (err, data) => {
-                    if (err) {
-                      console.log('读取文件失败', err);
-                      return;
-                    }
-                    const result = that.formateData(data);
-                    if (result.status !== 'Moved') {
-                      writeData.push(result);
-                    } else {
-                      const ercDirectory = './ETH-ERCS/ERCS/';
-                      const id = files[i].split('-')[1];
-                      const fsInfo = fs.readFileSync(
-                        path.join(ercDirectory, `erc-${id}`),
-                        'utf8',
-                      );
-                      const ercData = that.formateData(fsInfo);
-                      writeData.push(ercData);
-                    }
-
-                    getFileMeta(i + 1);
-                  },
-                );
-              }
-            })(0);
+            getFileMeta(i + 1);
           });
-        } else {
-          // console.log(err);
-          deleteFolder(paths);
         }
-      },
-    );
+      })(0);
+    });
   }
 
   async sendEmail() {
