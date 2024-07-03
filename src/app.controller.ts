@@ -90,17 +90,24 @@ export class AppController {
     };
   }
 
-  @Get('/eips/update')
-  @ApiOperation({ description: 'Updata Eips.' })
-  async updateAllEips() {
-    const result = await this.appService.updateEips();
+  @Get('/download/eips')
+  @ApiOperation({ description: 'download Eip.' })
+  async downloadEips() {
+    const result = await this.appService.downloadEips();
     return { data: result };
   }
 
-  @Get('/ercs/download')
+  @Get('/download/ercs')
   @ApiOperation({ description: 'download Ecs.' })
   async downloadErcs() {
     const result = await this.appService.downloadErcs();
+    return { data: result };
+  }
+
+  @Get('/eips/update')
+  @ApiOperation({ description: 'update Eip & Erc.' })
+  async updateAll() {
+    const result = await this.appService.updateData();
     return { data: result };
   }
 
