@@ -249,7 +249,7 @@ export class AppService {
   }
 
   async downloadEips() {
-    const paths = './ETH-EIPS/';
+    const paths = './ETH-EIPs/';
     deleteFolder(paths);
     return new Promise(function (res, rej) {
       download(
@@ -269,12 +269,12 @@ export class AppService {
   }
 
   async downloadErcs() {
-    const paths = './ETH-ERCS/';
+    const paths = './ETH-ERCs/';
     deleteFolder(paths);
     return new Promise(function (res, rej) {
       download(
         'direct:https://github.com/ethereum/ERCs.git',
-        'ETH-ERCS',
+        'ETH-ERCs',
         { clone: true },
         function (err) {
           if (err) {
@@ -288,14 +288,10 @@ export class AppService {
     });
   }
 
-  async updateEips() {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const that = this;
-    await this.downloadErcs();
-    await this.downloadEips();
-
+  async updateData() {
     const writeData = [];
     const directory = './ETH-EIPs/EIPS/';
+    const ercDirectory = './ETH-ERCs/ERCS/';
     // erc
     const getArr = async (path: string, type: 'eip' | 'erc') => {
       let files;
@@ -308,60 +304,63 @@ export class AppService {
       return files.map((f) => f.replace(type + '-', ''));
     };
 
-    const eipArr = await getArr('./ETH-EIPs/EIPS/', 'eip');
-    const ercArr = await getArr('./ETH-ERCS/ERCS/', 'erc');
+    const eipArr = await getArr(directory, 'eip');
+    const ercArr = await getArr(ercDirectory, 'erc');
     const ercNew = ercArr.filter((item) => !eipArr.includes(item));
     ercNew.shift();
     ercNew.forEach(async (item) => {
       let fileInfo;
       try {
-        fileInfo = await fs.promises.readFile(
-          path.join('./ETH-ERCS/ERCS/', `erc-${item}`),
+        fileInfo = fs.readFileSync(
+          path.join(ercDirectory, `erc-${item}`),
           'utf8',
         );
         const ercData = this.formateData(fileInfo);
         writeData.push(ercData);
       } catch (err) {
         console.error(err);
-        return;
       }
     });
 
-    fs.readdir(directory, async (err, files) => {
-      if (err) {
-        console.error(err);
+    let eipFiles;
+    try {
+      eipFiles = await fs.promises.readdir(directory);
+      if (eipFiles.length === 0) {
         return;
       }
-      (async function getFileMeta(i) {
-        if (i === files.length) {
-          console.log('解析EIPS文件完成');
-          await that.saveData(writeData);
-          console.log('写入DB完成');
-        } else {
-          fs.readFile(path.join(directory, files[i]), 'utf8', (err, data) => {
-            if (err) {
-              console.log('读取文件失败', err);
-              return;
-            }
-            const result = that.formateData(data);
-            if (result.status !== 'Moved') {
-              writeData.push(result);
-            } else {
-              const ercDirectory = './ETH-ERCS/ERCS/';
-              const id = files[i].split('-')[1];
-              const fsInfo = fs.readFileSync(
+
+      eipFiles.forEach(async (file) => {
+        try {
+          const fileInfo = fs.readFileSync(path.join(directory, file), 'utf8');
+          const result = this.formateData(fileInfo);
+          if (result.status !== 'Moved') {
+            writeData.push(result);
+          } else {
+            const id = file.split('-')[1];
+            try {
+              const ercInfo = fs.readFileSync(
                 path.join(ercDirectory, `erc-${id}`),
                 'utf8',
               );
-              const ercData = that.formateData(fsInfo);
-              writeData.push(ercData);
+              if (ercInfo) {
+                const ercData = this.formateData(ercInfo);
+                writeData.push(ercData);
+              }
+            } catch (err) {
+              console.error(err);
             }
-
-            getFileMeta(i + 1);
-          });
+          }
+        } catch (e) {
+          console.error(e);
         }
-      })(0);
-    });
+      });
+    } catch (err) {
+      console.error(err);
+    }
+    console.log(writeData.length);
+
+    await this.saveData(writeData);
+    return 'update success!';
   }
 
   async sendEmail() {
@@ -387,7 +386,9 @@ export class AppService {
 
   @Cron(CronExpression.EVERY_WEEK)
   async handleCheckUpdate() {
-    await this.updateEips();
+    await this.downloadErcs();
+    await this.downloadEips();
+    await this.updateData();
   }
 }
 
