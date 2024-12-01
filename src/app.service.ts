@@ -83,26 +83,56 @@ export class AppService {
     try {
       const result = {};
       // eip match
-      if (this.isNumeric(content)) {
+      const numbers = content.match(/\d+/g);
+      const texts = content.match(/\D+/g);
+      const txt = texts.length ? texts.join(' ').trim() : '';
+      const eips = [];
+      let eipCondition = '';
+      console.log(numbers);
+      if (numbers && numbers.length) {
+        numbers.forEach((item) => {
+          if (Number(item) < 10000) {
+            // eip number don't overt 10000
+            eips.push(`eip LIKE '%${item}%'`);
+          }
+        });
+        if (eips.length === 1) {
+          eipCondition = eips[0];
+        } else {
+          eipCondition = eips.join(' OR ');
+        }
+      }
+
+      if (eips.length && !txt) {
         const eipRecords = await this.connection.query(
-          `SELECT eip, title, type, category FROM "EIPs" WHERE eip='${content}'`,
+          `SELECT eip, title, type, category FROM "EIPs" WHERE ${eipCondition}`,
         );
         if (eipRecords && eipRecords.length > 0) {
           result['eip_list'] = eipRecords;
         }
       } else {
         // title match
+        const conditions = eips.length ? `${eipCondition} AND` : ``;
         const titleRecords = await this.connection.query(
-          `SELECT eip, type, category, ts_headline('english',title, q), rank FROM (SELECT eip, type, category, title, q, ts_rank_cd(title_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${content}') q WHERE title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+          `SELECT eip, type, category, ts_headline('english',title, q), rank FROM (SELECT eip, type, category, title, q, ts_rank_cd(title_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
         );
 
         if (titleRecords && titleRecords.length > 0) {
           result['title_list'] = titleRecords;
         }
 
+        // author match
+        const authorRecords = await this.connection.query(
+          `SELECT eip, type, category, ts_headline('english', author, q), rank FROM (SELECT eip, type, category, author, q, ts_rank_cd(author_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} author_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+        );
+
+        if (authorRecords && authorRecords.length > 0) {
+          result['author_list'] = authorRecords;
+        }
+
         // content match
         const contentRecords = await this.connection.query(
-          `SELECT eip, type, category, title, ts_headline('english',content, q), rank FROM (SELECT eip, type, category, title, content, q, ts_rank_cd(content_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${content}') q WHERE content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+          `SELECT eip, type, category, title, ts_headline('english',content, q), rank FROM (SELECT eip, type, category, title, content, q, ts_rank_cd(content_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
         );
         if (contentRecords && contentRecords.length > 0) {
           result['content_list'] = contentRecords;
