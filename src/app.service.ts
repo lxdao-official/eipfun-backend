@@ -83,12 +83,11 @@ export class AppService {
     try {
       const result = {};
       // eip match
-      const numbers = content.match(/\d+/g);
-      const texts = content.match(/\D+/g);
+      const numbers = content.match(/\d+/g) || [];
+      const texts = content.match(/\D+/g) || [];
       const txt = texts.length ? texts.join(' ').trim() : '';
       const eips = [];
       let eipCondition = '';
-      console.log(numbers);
       if (numbers && numbers.length) {
         numbers.forEach((item) => {
           if (Number(item) < 10000) {
@@ -103,7 +102,7 @@ export class AppService {
         }
       }
 
-      if (eips.length && !txt) {
+      if (eips?.length && !txt) {
         const eipRecords = await this.connection.query(
           `SELECT eip, title, type, category FROM "EIPs" WHERE ${eipCondition}`,
         );
