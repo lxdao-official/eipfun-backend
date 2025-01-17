@@ -65,7 +65,7 @@ export class AppService {
     });
 
     const list = await this.connection.query(
-      `SELECT id, eip, title, author, status, type, category FROM "EIPs" ${condition} order by (substring("eip", '^[0-9]+'))::int LIMIT ${take} OFFSET ${skip}`,
+      `SELECT id, eip, title, author, status, type, category FROM "EIPs" ${condition} order by eip LIMIT ${take} OFFSET ${skip}`,
     );
 
     return {
