@@ -92,7 +92,7 @@ export class AppService {
         numbers.forEach((item) => {
           if (Number(item) < 10000) {
             // eip number don't overt 10000
-            eips.push(`eip LIKE '%${item}%'`);
+            eips.push(`eip::text LIKE '%${item}%'`);
           }
         });
         if (eips.length === 1) {
