@@ -131,7 +131,7 @@ export class AppService {
 
         // content match
         const contentRecords = await this.connection.query(
-          `SELECT eip, type, category, title, ts_headline('english',content, q), rank FROM (SELECT eip, type, category, title, content, q, ts_rank_cd(to_tsvector((content_ts), q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+          `SELECT eip, type, category, title, ts_headline('english',content, q), rank FROM (SELECT eip, type, category, title, content, q, ts_rank_cd(to_tsvector(content_ts), q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
         );
         if (contentRecords && contentRecords.length > 0) {
           result['content_list'] = contentRecords;
