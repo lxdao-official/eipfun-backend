@@ -113,7 +113,7 @@ export class AppService {
         // title match
         const conditions = eips.length ? `${eipCondition} AND` : ``;
         const titleRecords = await this.connection.query(
-          `SELECT eip, type, category, ts_headline('english',title, q), rank FROM (SELECT eip, type, category, title, q, ts_rank(title_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+          `SELECT eip, type, category, ts_headline('english',title, q), rank FROM (SELECT eip, type, category, title, q, ts_rank_cd(to_tsvector(title_ts), q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
         );
 
         if (titleRecords && titleRecords.length > 0) {
@@ -122,7 +122,7 @@ export class AppService {
 
         // author match
         const authorRecords = await this.connection.query(
-          `SELECT eip, type, category, ts_headline('english', author, q), rank FROM (SELECT eip, type, category, author, q, ts_rank(author_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} author_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+          `SELECT eip, type, category, ts_headline('english', author, q), rank FROM (SELECT eip, type, category, author, q, ts_rank_cd(to_tsvector(author_ts), q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} author_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
         );
 
         if (authorRecords && authorRecords.length > 0) {
@@ -131,7 +131,7 @@ export class AppService {
 
         // content match
         const contentRecords = await this.connection.query(
-          `SELECT eip, type, category, title, ts_headline('english',content, q), rank FROM (SELECT eip, type, category, title, content, q, ts_rank(content_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+          `SELECT eip, type, category, title, ts_headline('english',content, q), rank FROM (SELECT eip, type, category, title, content, q, ts_rank_cd(to_tsvector((content_ts), q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
         );
         if (contentRecords && contentRecords.length > 0) {
           result['content_list'] = contentRecords;
