@@ -29,7 +29,7 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-      - name: Deploy to dokku
+      - name: Deploy
         uses: appleboy/ssh-action@master
         with:
           host: api.eip.fun
@@ -37,4 +37,4 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            /home/ubuntu/apps/api.eips.fun.sh 653640199626.dkr.ecr.us-west-2.amazonaws.com/eipsfun:${{ github.sha }}
+            /root/apps/api.eip.fun.sh 653640199626.dkr.ecr.us-west-2.amazonaws.com/eipsfun:${{ github.sha }}
