@@ -65,7 +65,7 @@ export class AppService {
     });
 
     const list = await this.connection.query(
-      `SELECT id, eip, title, author, status, type, category FROM "EIPs" ${condition} order by eip LIMIT ${take} OFFSET ${skip}`,
+      `SELECT id, eip, title, author, status, type, category FROM "EIPs" ${condition} order by (substring("eip", '^[0-9]+'))::int LIMIT ${take} OFFSET ${skip}`,
     );
 
     return {
@@ -92,7 +92,7 @@ export class AppService {
         numbers.forEach((item) => {
           if (Number(item) < 10000) {
             // eip number don't overt 10000
-            eips.push(`eip::text LIKE '%${item}%'`);
+            eips.push(`eip LIKE '%${item}%'`);
           }
         });
         if (eips.length === 1) {
@@ -113,7 +113,7 @@ export class AppService {
         // title match
         const conditions = eips.length ? `${eipCondition} AND` : ``;
         const titleRecords = await this.connection.query(
-          `SELECT eip, type, category, ts_headline('english',title, q), rank FROM (SELECT eip, type, category, title, q, ts_rank_cd(to_tsvector(title_ts), q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+          `SELECT eip, type, category, ts_headline('english',title, q), rank FROM (SELECT eip, type, category, title, q, ts_rank_cd(title_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} title_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
         );
 
         if (titleRecords && titleRecords.length > 0) {
@@ -122,7 +122,7 @@ export class AppService {
 
         // author match
         const authorRecords = await this.connection.query(
-          `SELECT eip, type, category, ts_headline('english', author, q), rank FROM (SELECT eip, type, category, author, q, ts_rank_cd(to_tsvector(author_ts), q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} author_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+          `SELECT eip, type, category, ts_headline('english', author, q), rank FROM (SELECT eip, type, category, author, q, ts_rank_cd(author_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} author_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
         );
 
         if (authorRecords && authorRecords.length > 0) {
@@ -131,7 +131,7 @@ export class AppService {
 
         // content match
         const contentRecords = await this.connection.query(
-          `SELECT eip, type, category, title, ts_headline('english',content, q), rank FROM (SELECT eip, type, category, title, content, q, ts_rank_cd(to_tsvector(content_ts), q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
+          `SELECT eip, type, category, title, ts_headline('english',content, q), rank FROM (SELECT eip, type, category, title, content, q, ts_rank_cd(content_ts, q) AS rank FROM "EIPs", phraseto_tsquery('english','${txt}') q WHERE ${conditions} content_ts @@ q ORDER BY rank DESC LIMIT 20) AS foo;`,
         );
         if (contentRecords && contentRecords.length > 0) {
           result['content_list'] = contentRecords;
@@ -401,21 +401,9 @@ export class AppService {
     try {
       await this.prisma.eIPs.deleteMany({});
 
-      for (const item of writeData) {
-        // 确保 requires 字段是数字数组
-        const formattedItem = {
-          ...item,
-          requires: Array.isArray(item.requires)
-            ? item.requires.map((r) =>
-                typeof r === 'number' ? r : parseInt(r),
-              )
-            : [],
-        };
-
-        await this.prisma.eIPs.create({
-          data: formattedItem,
-        });
-      }
+      await this.prisma.eIPs.createMany({
+        data: writeData,
+      });
     } catch (err) {
       console.error('Error saving data:', err);
       throw err;
