@@ -401,21 +401,9 @@ export class AppService {
     try {
       await this.prisma.eIPs.deleteMany({});
 
-      for (const item of writeData) {
-        // 确保 requires 字段是数字数组
-        const formattedItem = {
-          ...item,
-          requires: Array.isArray(item.requires)
-            ? item.requires.map((r) =>
-                typeof r === 'number' ? r : parseInt(r),
-              )
-            : [],
-        };
-
-        await this.prisma.eIPs.create({
-          data: formattedItem,
-        });
-      }
+      await this.prisma.eIPs.createMany({
+        data: writeData,
+      });
     } catch (err) {
       console.error('Error saving data:', err);
       throw err;
