@@ -399,17 +399,26 @@ export class AppService {
 
   async saveData(writeData: EIPs[]) {
     try {
-      // console.log(writeData.length);
       await this.prisma.eIPs.deleteMany({});
-      // for (const item of writeData) {
-      //   console.log('item:', item);
-      //   await this.prisma.eIPs.create({ data: item });
-      // }
-      await this.prisma.eIPs.createMany({
-        data: writeData,
-      });
+
+      for (const item of writeData) {
+        // 确保 requires 字段是数字数组
+        const formattedItem = {
+          ...item,
+          requires: Array.isArray(item.requires)
+            ? item.requires.map((r) =>
+                typeof r === 'number' ? r : parseInt(r),
+              )
+            : [],
+        };
+
+        await this.prisma.eIPs.create({
+          data: formattedItem,
+        });
+      }
     } catch (err) {
-      console.log(err);
+      console.error('Error saving data:', err);
+      throw err;
     }
   }
 
