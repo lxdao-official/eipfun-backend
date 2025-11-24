@@ -151,6 +151,54 @@ export class AppService {
     return false;
   }
 
+  /**
+   * 检查地址是否在白名单中
+   * @param address 要检查的地址
+   * @returns 是否在白名单中
+   */
+  async isWhiteListed(address: string): Promise<boolean> {
+    try {
+      const filePath = path.join(
+        process.cwd(),
+        'whiteListData',
+        'address.json',
+      );
+      const fileContent = await fs.promises.readFile(filePath, 'utf8');
+      const whiteList = JSON.parse(fileContent) as string[];
+      const lowerAddress = address.toLowerCase();
+      return whiteList.some((addr) => addr.toLowerCase() === lowerAddress);
+    } catch (error) {
+      console.error('Error checking whitelist:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 获取地址在白名单中的证明数据
+   * @param address 钱包地址
+   * @returns 证明数据数组或false
+   */
+  async getProof(address: string): Promise<any> {
+    try {
+      // 从dist目录上移一级到项目根目录
+      const filePath = path.join(__dirname, '../whiteListData/proofs.json');
+      const fileContent = await fs.promises.readFile(filePath, 'utf8');
+      const proofs = JSON.parse(fileContent) as Record<string, string[]>;
+      // 地址规范化处理（转为小写）
+      const normalizedAddress = address.toLowerCase();
+      return proofs[normalizedAddress] || false;
+    } catch (error) {
+      console.error('读取proofs文件失败:', {
+        error: error.message,
+        stack: error.stack,
+        filePath: path.join(__dirname, '../whiteListData/proofs.json'),
+        currentWorkingDirectory: process.cwd(),
+        __dirname: __dirname,
+      });
+      return false;
+    }
+  }
+
   async pingEMailService() {
     const response = await mailchimp.ping.get();
     console.log('mailchimp ping:', response);

@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Query, Logger, Body } from '@nestjs/common';
 import { AppService } from './app.service';
-import { ApiBody, ApiOperation, ApiParam, ApiProperty } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiProperty, ApiQuery } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EIPs, EIPType, EIPCategory, EIPStatus, Prisma } from '@prisma/client';
@@ -52,7 +52,7 @@ class EIPsFilters {
 export class AppController {
   private readonly logger = new Logger('App');
 
-  constructor(private readonly appService: AppService) { }
+  constructor(private readonly appService: AppService) {}
 
   @Get('/eips/search')
   @ApiOperation({ description: 'Search EIPs.' })
@@ -108,6 +108,47 @@ export class AppController {
   @ApiOperation({ description: 'update Eip & Erc.' })
   async updateAll() {
     const result = await this.appService.updateData();
+    return { data: result };
+  }
+
+  @Get('/nft/isWhiteAddress')
+  @ApiOperation({ description: 'Check if address is in whitelist' })
+  @ApiQuery({
+    name: 'address',
+    required: true,
+    description: 'Wallet address to check',
+  })
+  async isWhiteAddress(
+    @Query('address') address: string,
+  ): Promise<ResponseData<boolean>> {
+    if (!address) {
+      throw new BusinessException({
+        message: 'Address parameter is required',
+        error_code: 'ERROR_INVALID_PARAM',
+      });
+    }
+    const result = await this.appService.isWhiteListed(address);
+    return { data: result };
+  }
+
+  @Get('/nft/getAddressProof')
+  @ApiOperation({ description: 'Get address proof from whitelist' })
+  @ApiQuery({
+    name: 'address',
+    required: true,
+    description: 'Wallet address to get proof',
+  })
+  async getAddressProof(
+    @Query('address') address: string,
+  ): Promise<ResponseData<any>> {
+    if (!address) {
+      throw new BusinessException({
+        message: 'Address parameter is required',
+        error_code: 'ERROR_INVALID_PARAM',
+      });
+    }
+    console.log(address, 'address1');
+    const result = await this.appService.getProof(address);
     return { data: result };
   }
 
