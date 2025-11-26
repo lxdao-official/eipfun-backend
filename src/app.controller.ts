@@ -118,8 +118,10 @@ export class AppController {
     required: true,
     description: 'Wallet address to check',
   })
+  @ApiQuery({ name: 'tokenId', required: false, description: 'Token ID' })
   async isWhiteAddress(
     @Query('address') address: string,
+    @Query('tokenId') tokenId?: string,
   ): Promise<ResponseData<boolean>> {
     if (!address) {
       throw new BusinessException({
@@ -127,7 +129,8 @@ export class AppController {
         error_code: 'ERROR_INVALID_PARAM',
       });
     }
-    const result = await this.appService.isWhiteListed(address);
+    const token = Number(tokenId) || 1;
+    const result = await this.appService.isWhiteListed(address, token);
     return { data: result };
   }
 
@@ -138,8 +141,10 @@ export class AppController {
     required: true,
     description: 'Wallet address to get proof',
   })
+  @ApiQuery({ name: 'tokenId', required: false, description: 'Token ID' })
   async getAddressProof(
     @Query('address') address: string,
+    @Query('tokenId') tokenId?: string,
   ): Promise<ResponseData<any>> {
     if (!address) {
       throw new BusinessException({
@@ -147,9 +152,18 @@ export class AppController {
         error_code: 'ERROR_INVALID_PARAM',
       });
     }
-    console.log(address, 'address1');
-    const result = await this.appService.getProof(address);
+    const token = Number(tokenId) || 1;
+    const result = await this.appService.getProof(address, token);
     return { data: result };
+  }
+
+  @Get('/nft/merkleRoot')
+  @ApiOperation({ description: 'Get current merkle root for token' })
+  @ApiQuery({ name: 'tokenId', required: false, description: 'Token ID' })
+  async getMerkleRoot(@Query('tokenId') tokenId?: string) {
+    const token = Number(tokenId) || 1;
+    const root = await this.appService.getMerkleRoot(token);
+    return { data: root };
   }
 
   @Post('/email/subscribe')
