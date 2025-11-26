@@ -7,7 +7,8 @@ import * as fs from 'fs';
 import * as download from 'download-git-repo';
 import * as path from 'path';
 import { MerkleTree } from 'merkletreejs';
-import keccak256 from 'keccak256';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+import keccak256 = require('keccak256');
 
 import { DataSource } from 'typeorm';
 import { InjectDataSource } from '@nestjs/typeorm';
@@ -193,7 +194,8 @@ export class AppService {
     const isInList = await this.isWhiteListed(normalized, tokenId);
     if (!isInList) return false;
 
-    const merkleInfo = await this.getMerkleTree(tokenId);
+    // always rebuild to pick up latest DB updates
+    const merkleInfo = await this.getMerkleTree(tokenId, true);
     if (!merkleInfo) return false;
 
     const leaf = keccak256(Buffer.from(normalized.slice(2), 'hex'));
@@ -209,15 +211,20 @@ export class AppService {
     return merkleInfo ? merkleInfo.root : null;
   }
 
-  private async getMerkleTree(tokenId = 1): Promise<
+  private async getMerkleTree(
+    tokenId = 1,
+    forceRebuild = false,
+  ): Promise<
     | {
         tree: MerkleTree;
         root: string;
       }
     | null
   > {
-    const cached = this.merkleCache.get(tokenId);
-    if (cached) return cached;
+    if (!forceRebuild) {
+      const cached = this.merkleCache.get(tokenId);
+      if (cached) return cached;
+    }
 
     const entries = await this.prisma.whitelistEntry.findMany({
       where: {

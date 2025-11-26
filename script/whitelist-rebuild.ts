@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { MerkleTree } from 'merkletreejs';
-import keccak256 from 'keccak256';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+import keccak256 = require('keccak256');
 
 const prisma = new PrismaClient();
 
@@ -39,4 +40,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

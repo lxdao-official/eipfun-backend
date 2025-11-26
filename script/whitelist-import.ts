@@ -1,6 +1,8 @@
 import { PrismaClient, WhitelistSource } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+import keccak256 = require('keccak256');
 
 const prisma = new PrismaClient();
 
@@ -68,4 +70,3 @@ main().catch((e) => {
   prisma.$disconnect();
   process.exit(1);
 });
-
