@@ -1,4 +1,4 @@
-import { PrismaClient, WhitelistSource } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { MerkleTree } from 'merkletreejs';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 import keccak256 = require('keccak256');
@@ -6,7 +6,9 @@ import keccak256 = require('keccak256');
 const prisma = new PrismaClient();
 
 function buildTree(addresses: string[]) {
-  const leaves = addresses.map((addr) => keccak256(Buffer.from(addr.slice(2), 'hex')));
+  const leaves = addresses.map((addr) =>
+    keccak256(Buffer.from(addr.slice(2), 'hex')),
+  );
   const tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
   const root = '0x' + tree.getRoot().toString('hex');
   return { tree, root };
@@ -15,13 +17,14 @@ function buildTree(addresses: string[]) {
 async function main() {
   const tokenId = Number(process.argv[2]) || 1;
   const sourceArg = process.argv[3];
-  const sources: WhitelistSource[] | undefined = sourceArg
-    ? sourceArg
-        .split(',')
-        .map((s) => s.trim())
-        .filter((s): s is keyof typeof WhitelistSource => Boolean(WhitelistSource[s as keyof typeof WhitelistSource]))
-        .map((s) => WhitelistSource[s as keyof typeof WhitelistSource])
-    : undefined;
+  const envSources = process.env.WHITELIST_SOURCES;
+  const sources: string[] | undefined =
+    sourceArg || envSources
+      ? (sourceArg || envSources)
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : undefined;
 
   const entries = await prisma.whitelistEntry.findMany({
     where: {
