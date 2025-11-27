@@ -32,12 +32,15 @@ async function main() {
       ...(sources && sources.length ? { source: { in: sources } } : {}),
     },
     select: { address: true },
+    orderBy: { address: 'asc' },
   });
   if (!entries.length) {
     console.log('No entries for tokenId', tokenId);
     return;
   }
-  const addrs = entries.map((e) => e.address);
+  const addrs = Array.from(new Set(entries.map((e) => e.address))).sort(
+    (a, b) => a.localeCompare(b),
+  );
   const { root } = buildTree(addrs);
   await prisma.merkleRoot.upsert({
     where: { token_id: tokenId },

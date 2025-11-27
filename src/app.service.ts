@@ -250,14 +250,19 @@ export class AppService {
           : {}),
       },
       select: { address: true },
+      orderBy: { address: 'asc' },
     });
 
     if (!entries || entries.length === 0) {
       return null;
     }
 
-    const leaves = entries.map((entry) =>
-      keccak256(Buffer.from(entry.address.replace(/^0x/, ''), 'hex')),
+    const addresses = Array.from(
+      new Set(entries.map((entry) => entry.address)),
+    ).sort((a, b) => a.localeCompare(b));
+
+    const leaves = addresses.map((address) =>
+      keccak256(Buffer.from(address.replace(/^0x/, ''), 'hex')),
     );
     const tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
     const root = '0x' + tree.getRoot().toString('hex');
