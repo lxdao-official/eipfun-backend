@@ -35,19 +35,11 @@ enum EIPStatus {
   Moved
 }
 
-enum WhitelistSource {
-  community
-  partner
-  campaign
-  manual
-  other
-}
-
 model WhitelistEntry {
   id        Int              @id @default(autoincrement())
   address   String           @unique
   token_ids Int[]
-  source    WhitelistSource  @default(manual)
+  source    String?
   note      String?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
