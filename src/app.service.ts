@@ -1,13 +1,6 @@
 import { ConsoleLogger, Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
-import {
-  EIPs,
-  EIPStatus,
-  EIPType,
-  EIPCategory,
-  Prisma,
-  WhitelistSource,
-} from '@prisma/client';
+import { EIPs, EIPStatus, EIPType, EIPCategory } from '@prisma/client';
 import * as mailchimp from '@mailchimp/mailchimp_marketing';
 import * as md5 from 'md5';
 import * as fs from 'fs';
@@ -37,7 +30,7 @@ export class AppService {
 
   private merkleCache: Map<number, { tree: MerkleTree; root: string }> =
     new Map();
-  private allowedSources: WhitelistSource[] | null = null;
+  private allowedSources: string[] | null = null;
 
   async findAll(
     type?: EIPType,
@@ -101,16 +94,13 @@ export class AppService {
     return isHex ? lower : null;
   }
 
-  private parseAllowedSources(): WhitelistSource[] | null {
+  private parseAllowedSources(): string[] | null {
     const raw = process.env.WHITELIST_SOURCES;
     if (!raw) return null;
     const arr = raw
       .split(',')
       .map((s) => s.trim())
-      .filter(Boolean)
-      .map((s) => s as keyof typeof WhitelistSource)
-      .filter((s) => WhitelistSource[s] !== undefined)
-      .map((s) => WhitelistSource[s]);
+      .filter(Boolean);
     return arr.length ? arr : null;
   }
 
