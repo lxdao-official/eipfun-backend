@@ -6,6 +6,9 @@ import * as md5 from 'md5';
 import * as fs from 'fs';
 import * as download from 'download-git-repo';
 import * as path from 'path';
+import { MerkleTree } from 'merkletreejs';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+import keccak256 = require('keccak256');
 
 import { DataSource } from 'typeorm';
 import { InjectDataSource } from '@nestjs/typeorm';
@@ -23,6 +26,9 @@ export class AppService {
       server: 'us17',
     });
   }
+
+  private merkleCache: Map<number, { tree: MerkleTree; root: string }> =
+    new Map();
 
   async findAll(
     type?: EIPType,
@@ -77,6 +83,13 @@ export class AppService {
   isNumeric(str: any) {
     if (typeof str != 'string') return false;
     return !isNaN(Number(str)) && !isNaN(parseFloat(str));
+  }
+
+  private normalizeAddress(address: string): string | null {
+    if (!address || typeof address !== 'string') return null;
+    const lower = address.toLowerCase();
+    const isHex = /^0x[a-f0-9]{40}$/i.test(address);
+    return isHex ? lower : null;
   }
 
   async search(content: string) {
@@ -149,6 +162,98 @@ export class AppService {
       return true;
     }
     return false;
+  }
+
+  /**
+   * 检查地址是否在白名单中
+   */
+  async isWhiteListed(address: string, tokenId = 1): Promise<boolean> {
+    const normalized = this.normalizeAddress(address);
+    if (!normalized) return false;
+
+    const entry = await this.prisma.whitelistEntry.findUnique({
+      where: { address: normalized },
+    });
+    if (!entry || !entry.token_ids?.length) return false;
+    return entry.token_ids.includes(tokenId);
+  }
+
+  /**
+   * 获取地址在白名单中的证明数据
+   */
+  async getProof(address: string, tokenId = 1): Promise<
+    | false
+    | {
+        proof: string[];
+        root: string;
+      }
+  > {
+    const normalized = this.normalizeAddress(address);
+    if (!normalized) return false;
+
+    const isInList = await this.isWhiteListed(normalized, tokenId);
+    if (!isInList) return false;
+
+    // always rebuild to pick up latest DB updates
+    const merkleInfo = await this.getMerkleTree(tokenId, true);
+    if (!merkleInfo) return false;
+
+    const leaf = keccak256(Buffer.from(normalized.slice(2), 'hex'));
+    const proof = merkleInfo.tree
+      .getProof(leaf)
+      .map((p) => '0x' + p.data.toString('hex'));
+
+    return { proof, root: merkleInfo.root };
+  }
+
+  async getMerkleRoot(tokenId = 1): Promise<string | null> {
+    const merkleInfo = await this.getMerkleTree(tokenId);
+    return merkleInfo ? merkleInfo.root : null;
+  }
+
+  private async getMerkleTree(
+    tokenId = 1,
+    forceRebuild = false,
+  ): Promise<
+    | {
+        tree: MerkleTree;
+        root: string;
+      }
+    | null
+  > {
+    if (!forceRebuild) {
+      const cached = this.merkleCache.get(tokenId);
+      if (cached) return cached;
+    }
+
+    const entries = await this.prisma.whitelistEntry.findMany({
+      where: {
+        token_ids: {
+          has: tokenId,
+        },
+      },
+      select: { address: true },
+    });
+
+    if (!entries || entries.length === 0) {
+      return null;
+    }
+
+    const leaves = entries.map((entry) =>
+      keccak256(Buffer.from(entry.address.replace(/^0x/, ''), 'hex')),
+    );
+    const tree = new MerkleTree(leaves, keccak256, { sortPairs: true });
+    const root = '0x' + tree.getRoot().toString('hex');
+
+    this.merkleCache.set(tokenId, { tree, root });
+
+    await this.prisma.merkleRoot.upsert({
+      where: { token_id: tokenId },
+      update: { root },
+      create: { token_id: tokenId, root },
+    });
+
+    return { tree, root };
   }
 
   async pingEMailService() {

@@ -38,3 +38,5 @@ lerna-debug.log*
 ETH-EIPs/*
 ETH-ERCS/*
 .env
+
+whitelist.json
