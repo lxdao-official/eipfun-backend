@@ -1,13 +1,16 @@
-FROM node:16
+FROM node:20-bookworm-slim
 
 RUN apt-get update \
-    && apt-get install -qq build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+    && apt-get install -y --no-install-recommends \
+      build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app/
+WORKDIR /app
+COPY package*.json yarn.lock* .npmrc* ./
+RUN npm install
+
 COPY . .
-RUN npm config set strict-ssl false \
-    && npm install \
-    && npm run build
+RUN npm run build
 
 EXPOSE 80
-CMD [ "npm", "start" ]
+CMD ["npm", "start"]
