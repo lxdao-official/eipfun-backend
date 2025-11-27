@@ -1,6 +1,13 @@
 import { ConsoleLogger, Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
-import { EIPs, EIPStatus, EIPType, EIPCategory, Prisma } from '@prisma/client';
+import {
+  EIPs,
+  EIPStatus,
+  EIPType,
+  EIPCategory,
+  Prisma,
+  WhitelistSource,
+} from '@prisma/client';
 import * as mailchimp from '@mailchimp/mailchimp_marketing';
 import * as md5 from 'md5';
 import * as fs from 'fs';
@@ -25,10 +32,12 @@ export class AppService {
       apiKey: process.env.MAILCHIMP_API_KEY,
       server: 'us17',
     });
+    this.allowedSources = this.parseAllowedSources();
   }
 
   private merkleCache: Map<number, { tree: MerkleTree; root: string }> =
     new Map();
+  private allowedSources: WhitelistSource[] | null = null;
 
   async findAll(
     type?: EIPType,
@@ -90,6 +99,19 @@ export class AppService {
     const lower = address.toLowerCase();
     const isHex = /^0x[a-f0-9]{40}$/i.test(address);
     return isHex ? lower : null;
+  }
+
+  private parseAllowedSources(): WhitelistSource[] | null {
+    const raw = process.env.WHITELIST_SOURCES;
+    if (!raw) return null;
+    const arr = raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => s as keyof typeof WhitelistSource)
+      .filter((s) => WhitelistSource[s] !== undefined)
+      .map((s) => WhitelistSource[s]);
+    return arr.length ? arr : null;
   }
 
   async search(content: string) {
@@ -175,13 +197,19 @@ export class AppService {
       where: { address: normalized },
     });
     if (!entry || !entry.token_ids?.length) return false;
+    if (this.allowedSources && !this.allowedSources.includes(entry.source)) {
+      return false;
+    }
     return entry.token_ids.includes(tokenId);
   }
 
   /**
    * 获取地址在白名单中的证明数据
    */
-  async getProof(address: string, tokenId = 1): Promise<
+  async getProof(
+    address: string,
+    tokenId = 1,
+  ): Promise<
     | false
     | {
         proof: string[];
@@ -194,7 +222,6 @@ export class AppService {
     const isInList = await this.isWhiteListed(normalized, tokenId);
     if (!isInList) return false;
 
-    // always rebuild to pick up latest DB updates
     const merkleInfo = await this.getMerkleTree(tokenId, true);
     if (!merkleInfo) return false;
 
@@ -214,13 +241,10 @@ export class AppService {
   private async getMerkleTree(
     tokenId = 1,
     forceRebuild = false,
-  ): Promise<
-    | {
-        tree: MerkleTree;
-        root: string;
-      }
-    | null
-  > {
+  ): Promise<{
+    tree: MerkleTree;
+    root: string;
+  } | null> {
     if (!forceRebuild) {
       const cached = this.merkleCache.get(tokenId);
       if (cached) return cached;
@@ -231,6 +255,9 @@ export class AppService {
         token_ids: {
           has: tokenId,
         },
+        ...(this.allowedSources && this.allowedSources.length
+          ? { source: { in: this.allowedSources } }
+          : {}),
       },
       select: { address: true },
     });

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, WhitelistSource } from '@prisma/client';
 import { MerkleTree } from 'merkletreejs';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 import keccak256 = require('keccak256');
@@ -14,8 +14,20 @@ function buildTree(addresses: string[]) {
 
 async function main() {
   const tokenId = Number(process.argv[2]) || 1;
+  const sourceArg = process.argv[3];
+  const sources: WhitelistSource[] | undefined = sourceArg
+    ? sourceArg
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s): s is keyof typeof WhitelistSource => Boolean(WhitelistSource[s as keyof typeof WhitelistSource]))
+        .map((s) => WhitelistSource[s as keyof typeof WhitelistSource])
+    : undefined;
+
   const entries = await prisma.whitelistEntry.findMany({
-    where: { token_ids: { has: tokenId } },
+    where: {
+      token_ids: { has: tokenId },
+      ...(sources && sources.length ? { source: { in: sources } } : {}),
+    },
     select: { address: true },
   });
   if (!entries.length) {
