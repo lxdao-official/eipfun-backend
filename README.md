@@ -1,81 +1,82 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# EIPFun Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS + Prisma/PostgreSQL backend for EIPFun. It serves Ethereum Improvement Proposal (EIP/ ERC) content, manages NFT whitelist data, produces Merkle proofs for minting, and handles email subscriptions.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Stack
 
-Dev CICD test.
+- Node.js / TypeScript / NestJS
+- PostgreSQL with Prisma ORM (plus a light TypeORM read path)
+- Mailchimp for email subscriptions
+- `merkletreejs` + `keccak256` for whitelist proofs
 
-## Description
+## Getting Started
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Installation
+1. Install dependencies
 
 ```bash
-$ yarn install
+npm install
 ```
 
-## Start services
-
-```
-cd service && docker-compose up -d
-```
-
-## Running the app
+2. Start the database (PostgreSQL 15)
 
 ```bash
-# development
-$ yarn run start
-
-# watch mode
-$ yarn run start:dev
-
-# production mode
-$ yarn run start:prod
+cd service
+docker-compose up -d
 ```
 
-## Test
+3. Configure environment (see below), then migrate & generate the Prisma client
 
 ```bash
-# unit tests
-$ yarn run test
-
-# e2e tests
-$ yarn run test:e2e
-
-# test coverage
-$ yarn run test:cov
+cp .env.example .env    # if you keep one; otherwise create .env manually
+npm run migrate:dev
+npm run generate
 ```
 
-## Support
+4. Run the API
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+npm run start:dev   # or: npm run start
+```
 
-## Stay in touch
+## Database Tasks
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- Migrate dev schema: `npm run migrate:dev`
+- Generate Prisma client: `npm run generate`
+- Start DB locally: `cd service && docker-compose up -d`
 
-## License
+## Whitelist Management
 
-Nest is [MIT licensed](LICENSE).
+- Import whitelist JSON into the database:
+  `npm run whitelist:import -- <path-to-json>`
+- Set environment variables for whitelist sources
+- Rebuild Merkle root for a token (deterministic ordering):
+  `npm run whitelist:rebuild -- <tokenId>`
+  The resulting root is stored in `MerkleRoot` and cached in-memory.
+
+## EIP/ ERC Data
+
+- Download latest EIPs: `GET /download/eips`
+- Download latest ERCs: `GET /download/ercs`
+- Refresh stored data: `GET /eips/update`
+
+## Key API Endpoints
+
+- `GET /eips/list` — list EIPs with pagination and optional filters (`type`, `category`, `status`, `page`, `per_page`)
+- `GET /eips/search?content=...` — search EIPs by content/title/author
+- `GET /nft/isWhiteAddress?address=0x...&tokenId=1` — check whitelist membership
+- `GET /nft/getAddressProof?address=0x...&tokenId=1` — Merkle proof + root for a wallet
+- `GET /nft/merkleRoot?tokenId=1` — current Merkle root for a token
+- `POST /email/subscribe` — subscribe an email (`{ address: "name@example.com" }`)
+
+All routes are exposed from `src/app.controller.ts` and implemented in `src/app.service.ts`.
+
+## Development Scripts
+
+- Lint: `npm run lint`
+- Test: `npm run test` (unit), `npm run test:e2e`
+- Build: `npm run build` (runs Prisma generate, then Nest build)
+
+## Notes
+
+- Whitelist proof generation uses sorted pair hashing (`sortPairs: true`) and deterministic address ordering to keep Merkle roots stable across runs.
+- `WHITELIST_SOURCES` can restrict both API lookups and rebuild scripts to a subset of sources.
