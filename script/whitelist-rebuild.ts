@@ -34,6 +34,7 @@ async function main() {
     select: { address: true },
     orderBy: { address: 'asc' },
   });
+  console.log('Entries:', entries.length);
   if (!entries.length) {
     console.log('No entries for tokenId', tokenId);
     return;
